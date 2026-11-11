@@ -1,0 +1,65 @@
+{"id": "cls-0001", "input": "error_code: STATES.TIMEOUT\nattempt: 1\nmessage: task timed out after 150 seconds", "label": "unknown"}
+{"id": "cls-0002", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 1\nmessage: field 'route' nests 4 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0003", "input": "error_code: ThrottlingException\nattempt: 1\nmessage: Rate exceeded for operation GetObject", "label": "cloud_outage"}
+{"id": "cls-0004", "input": "error_code: SCHEMA.MISSING_FIELD\nattempt: 1\nmessage: declared fields not found in source: order_id", "label": "user_input_error"}
+{"id": "cls-0005", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 1\nmessage: field 'region': 32 value(s) cannot be read as double", "label": "user_input_error"}
+{"id": "cls-0006", "input": "error_code: IO.ERROR\nattempt: 1\nmessage: upstream connect error or disconnect/reset before headers. reset reason: connection reset", "label": "cloud_outage"}
+{"id": "cls-0007", "input": "error_code: INPUT.ACCESS_DENIED\nattempt: 2\nmessage: no read access to s3://partner-drop/inventory_snapshots/", "label": "user_input_error"}
+{"id": "cls-0008", "input": "error_code: STATES.TIMEOUT\nattempt: 3\nmessage: task timed out after 150 seconds", "label": "unknown"}
+{"id": "cls-0009", "input": "error_code: IO.ERROR\nattempt: 3\nmessage: upstream connect error or disconnect/reset before headers. reset reason: connection reset", "label": "cloud_outage"}
+{"id": "cls-0010", "input": "error_code: RequestTimeout\nattempt: 3\nmessage: Your socket connection to the server was not read from or written to within the timeout period.", "label": "cloud_outage"}
+{"id": "cls-0011", "input": "error_code: IO.ERROR\nattempt: 2\nmessage: read timed out after 30000 ms while fetching s3 object", "label": "cloud_outage"}
+{"id": "cls-0012", "input": "error_code: INPUT.NOT_FOUND\nattempt: 1\nmessage: timed out waiting for object orders.json; 404 after retries", "label": "user_input_error"}
+{"id": "cls-0013", "input": "error_code: IO.ERROR\nattempt: 3\nmessage: read timed out after 30000 ms while fetching s3 object", "label": "cloud_outage"}
+{"id": "cls-0014", "input": "error_code: IO.ERROR\nattempt: 2\nmessage: upstream connect error or disconnect/reset before headers. reset reason: connection reset", "label": "cloud_outage"}
+{"id": "cls-0015", "input": "error_code: SCHEMA.INVALID_SPEC\nattempt: 1\nmessage: spec field 'amount' has an unknown type 'money'", "label": "user_input_error"}
+{"id": "cls-0016", "input": "error_code: INPUT.NOT_FOUND\nattempt: 2\nmessage: source object not found: s3://landing/shipments/2026-11-06.json", "label": "user_input_error"}
+{"id": "cls-0017", "input": "error_code: SCHEMA.MISSING_FIELD\nattempt: 3\nmessage: declared fields not found in source: quantity", "label": "user_input_error"}
+{"id": "cls-0018", "input": "error_code: INPUT.ACCESS_DENIED\nattempt: 1\nmessage: no read access to s3://partner-drop/orders/", "label": "user_input_error"}
+{"id": "cls-0019", "input": "error_code: WORKER.ERROR\nattempt: 3\nmessage: KeyError: 'partition_ts'", "label": "unknown"}
+{"id": "cls-0020", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 1\nmessage: field 'quantity': 2 value(s) cannot be read as double", "label": "user_input_error"}
+{"id": "cls-0021", "input": "error_code: WORKER.ERROR\nattempt: 3\nmessage: Segmentation fault (core dumped)", "label": "unknown"}
+{"id": "cls-0022", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 1\nmessage: field 'order_id': 7 value(s) cannot be read as double", "label": "user_input_error"}
+{"id": "cls-0023", "input": "error_code: INPUT.NOT_FOUND\nattempt: 2\nmessage: source object not found: s3://landing/inventory_snapshots/2026-11-06.json", "label": "user_input_error"}
+{"id": "cls-0024", "input": "error_code: WORKER.ERROR\nattempt: 3\nmessage: botocore.exceptions.ReadTimeoutError: Read timeout on endpoint URL", "label": "cloud_outage"}
+{"id": "cls-0025", "input": "error_code: WORKER.ERROR\nattempt: 1\nmessage: botocore.exceptions.ReadTimeoutError: Read timeout on endpoint URL", "label": "cloud_outage"}
+{"id": "cls-0026", "input": "error_code: TRANSFORM.UNSUPPORTED_TYPE\nattempt: 1\nmessage: source format 'orc' is not supported by the worker", "label": "unsupported_transformation"}
+{"id": "cls-0027", "input": "error_code: TRANSFORM.UNSUPPORTED_TYPE\nattempt: 3\nmessage: source format 'tsv' is not supported by the worker", "label": "unsupported_transformation"}
+{"id": "cls-0028", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 1\nmessage: field 'customer_ref' is declared non-nullable but has 15 null(s)", "label": "user_input_error"}
+{"id": "cls-0029", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: Segmentation fault (core dumped)", "label": "unknown"}
+{"id": "cls-0030", "input": "error_code: S3.SlowDown\nattempt: 1\nmessage: Please reduce your request rate.", "label": "cloud_outage"}
+{"id": "cls-0031", "input": "error_code: TRANSFORM.UNSUPPORTED_TYPE\nattempt: 3\nmessage: source format 'avro' is not supported by the worker", "label": "unsupported_transformation"}
+{"id": "cls-0032", "input": "error_code: INPUT.UNREADABLE\nattempt: 3\nmessage: could not read source as json: InvalidInputException", "label": "user_input_error"}
+{"id": "cls-0033", "input": "error_code: S3.InternalError\nattempt: 1\nmessage: We encountered an internal error. Please try again.", "label": "cloud_outage"}
+{"id": "cls-0034", "input": "error_code: WORKER.ERROR\nattempt: 3\nmessage: NotImplementedError: no reader registered for format 'fixed_width'", "label": "unsupported_transformation"}
+{"id": "cls-0035", "input": "error_code: S3.ServiceUnavailable\nattempt: 1\nmessage: Service Unavailable", "label": "cloud_outage"}
+{"id": "cls-0036", "input": "error_code: INPUT.NOT_FOUND\nattempt: 1\nmessage: source object not found: s3://landing/shipments/2026-11-02.json", "label": "user_input_error"}
+{"id": "cls-0037", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 2\nmessage: field 'order_id' is declared non-nullable but has 23 null(s)", "label": "user_input_error"}
+{"id": "cls-0038", "input": "error_code: RequestTimeout\nattempt: 2\nmessage: Your socket connection to the server was not read from or written to within the timeout period.", "label": "cloud_outage"}
+{"id": "cls-0039", "input": "error_code: SCHEMA.TYPE_MISMATCH\nattempt: 2\nmessage: field 'region' is declared non-nullable but has 34 null(s)", "label": "user_input_error"}
+{"id": "cls-0040", "input": "error_code: STATES.TIMEOUT\nattempt: 2\nmessage: task timed out after 150 seconds", "label": "unknown"}
+{"id": "cls-0041", "input": "error_code: S3.ServiceUnavailable\nattempt: 3\nmessage: Service Unavailable", "label": "cloud_outage"}
+{"id": "cls-0042", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: Binder Error: STRUCT nesting depth 5 exceeds supported depth", "label": "unsupported_transformation"}
+{"id": "cls-0043", "input": "error_code: WORKER.ERROR\nattempt: 1\nmessage: Segmentation fault (core dumped)", "label": "unknown"}
+{"id": "cls-0044", "input": "error_code: S3.InternalError\nattempt: 3\nmessage: We encountered an internal error. Please try again.", "label": "cloud_outage"}
+{"id": "cls-0045", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 1\nmessage: field 'route' nests 5 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0046", "input": "error_code: UNKNOWN\nattempt: 1\nmessage: no error details", "label": "unknown"}
+{"id": "cls-0047", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: NotImplementedError: no reader registered for format 'avro'", "label": "unsupported_transformation"}
+{"id": "cls-0048", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 3\nmessage: field 'items' nests 6 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0049", "input": "error_code: INPUT.NOT_FOUND\nattempt: 3\nmessage: timed out waiting for object returns.json; 404 after retries", "label": "user_input_error"}
+{"id": "cls-0050", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 2\nmessage: field 'route' nests 4 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0051", "input": "error_code: S3.SlowDown\nattempt: 3\nmessage: Please reduce your request rate.", "label": "cloud_outage"}
+{"id": "cls-0052", "input": "error_code: WORKER.ERROR\nattempt: 1\nmessage: duckdb.IOException: could not write file /tmp/out.parquet: No space left on device", "label": "unknown"}
+{"id": "cls-0053", "input": "error_code: WORKER.ERROR\nattempt: 1\nmessage: Binder Error: STRUCT nesting depth 4 exceeds supported depth", "label": "unsupported_transformation"}
+{"id": "cls-0054", "input": "error_code: WORKER.OOM\nattempt: 1\nmessage: container killed: exit code 137", "label": "unknown"}
+{"id": "cls-0055", "input": "error_code: INPUT.NOT_FOUND\nattempt: 1\nmessage: timed out waiting for object shipments.json; 404 after retries", "label": "user_input_error"}
+{"id": "cls-0056", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: duckdb.IOException: could not write file /tmp/out.parquet: No space left on device", "label": "unknown"}
+{"id": "cls-0057", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: NotImplementedError: no reader registered for format 'fixed_width'", "label": "unsupported_transformation"}
+{"id": "cls-0058", "input": "error_code: SCHEMA.INVALID_SPEC\nattempt: 1\nmessage: spec field 'region' has an unknown type 'money'", "label": "user_input_error"}
+{"id": "cls-0059", "input": "error_code: RequestTimeout\nattempt: 1\nmessage: Your socket connection to the server was not read from or written to within the timeout period.", "label": "cloud_outage"}
+{"id": "cls-0060", "input": "error_code: INPUT.UNREADABLE\nattempt: 1\nmessage: could not read source as json: InvalidInputException", "label": "user_input_error"}
+{"id": "cls-0061", "input": "error_code: WORKER.ERROR\nattempt: 1\nmessage: Binder Error: STRUCT nesting depth 5 exceeds supported depth", "label": "unsupported_transformation"}
+{"id": "cls-0062", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 1\nmessage: field 'items' nests 6 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0063", "input": "error_code: TRANSFORM.UNSUPPORTED_NESTING\nattempt: 2\nmessage: field 'items' nests 5 levels; the maximum supported is 3", "label": "unsupported_transformation"}
+{"id": "cls-0064", "input": "error_code: WORKER.ERROR\nattempt: 2\nmessage: KeyError: 'partition_ts'", "label": "unknown"}
+{"id": "cls-0065", "input": "error_code: ThrottlingException\nattempt: 2\nmessage: Rate exceeded for operation GetObject", "label": "cloud_outage"}
