@@ -1,0 +1,159 @@
+{
+  "name": "rules",
+  "started_utc": "2026-11-11T12:01:33.869376+00:00",
+  "wall_s": 0.0,
+  "dataset_sha256": "4b4277b7b45acffe9417059abaa7fa5b53d5722868d30c4881a5586745805360",
+  "dataset_source_commit": "ac5bb27b912fb840be03b5e56f860b507ee21808",
+  "prompt_version": "20f64f2540e2",
+  "inference_lab_commit": "unknown",
+  "client_host": "vm",
+  "client_python": "3.13.18",
+  "backend_config": {
+    "backend": "rules",
+    "triage_repo_commit": "ac5bb27b912fb840be03b5e56f860b507ee21808"
+  },
+  "examples": 65,
+  "scores": {
+    "n": 65,
+    "correct": 54,
+    "accuracy": 0.8308,
+    "macro_f1": 0.8089,
+    "invalid": 0,
+    "per_class": {
+      "cloud_outage": {
+        "support": 18,
+        "precision": 0.8421,
+        "recall": 0.8889,
+        "f1": 0.8649
+      },
+      "user_input_error": {
+        "support": 20,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "unsupported_transformation": {
+        "support": 15,
+        "precision": 1.0,
+        "recall": 0.6,
+        "f1": 0.75
+      },
+      "unknown": {
+        "support": 12,
+        "precision": 0.5294,
+        "recall": 0.75,
+        "f1": 0.6207
+      }
+    },
+    "confusion": {
+      "cloud_outage": {
+        "cloud_outage": 16,
+        "user_input_error": 0,
+        "unsupported_transformation": 0,
+        "unknown": 2,
+        "invalid": 0
+      },
+      "user_input_error": {
+        "cloud_outage": 0,
+        "user_input_error": 20,
+        "unsupported_transformation": 0,
+        "unknown": 0,
+        "invalid": 0
+      },
+      "unsupported_transformation": {
+        "cloud_outage": 0,
+        "user_input_error": 0,
+        "unsupported_transformation": 9,
+        "unknown": 6,
+        "invalid": 0
+      },
+      "unknown": {
+        "cloud_outage": 3,
+        "user_input_error": 0,
+        "unsupported_transformation": 0,
+        "unknown": 9,
+        "invalid": 0
+      }
+    }
+  },
+  "errors": 0,
+  "refusals": 0,
+  "latency_s": {
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0009
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "cost_usd": 0.0,
+  "misclassified": [
+    {
+      "id": "cls-0001",
+      "gold": "unknown",
+      "pred": "cloud_outage",
+      "raw": "R001_cloud_outage matched_on=message"
+    },
+    {
+      "id": "cls-0008",
+      "gold": "unknown",
+      "pred": "cloud_outage",
+      "raw": "R001_cloud_outage matched_on=message"
+    },
+    {
+      "id": "cls-0024",
+      "gold": "cloud_outage",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0025",
+      "gold": "cloud_outage",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0034",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0040",
+      "gold": "unknown",
+      "pred": "cloud_outage",
+      "raw": "R001_cloud_outage matched_on=message"
+    },
+    {
+      "id": "cls-0042",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0047",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0053",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0057",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    },
+    {
+      "id": "cls-0061",
+      "gold": "unsupported_transformation",
+      "pred": "unknown",
+      "raw": "R999_fallback matched_on=none"
+    }
+  ]
+}
