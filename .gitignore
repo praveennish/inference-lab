@@ -1,0 +1,12 @@
+build/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.terraform/
+*.tfstate*
+*.tfplan
+.terraform.lock.hcl.bak
+node_modules/
+.terraform.lock.hcl
