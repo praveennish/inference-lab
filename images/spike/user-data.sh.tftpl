@@ -1,0 +1,20 @@
+#!/bin/bash
+# Rendered by infra/spike. Fetches the harness bundle and runs images/spike/spike.sh.
+set -uo pipefail
+shutdown -h +${max_minutes} "inference-lab spike hard cap reached"
+mkdir -p /opt/lab && cd /opt/lab
+cat > spike.env <<ENV
+BUCKET=${bucket}
+RUN_ID=${run_id}
+LABEL=${label}
+VLLM_VERSION=${vllm_version}
+MODEL_ID=${model_id}
+MODEL_REVISION=${model_revision}
+LLAMA_CPP_REF=${llama_cpp_ref}
+ENV
+aws s3 cp "s3://${bucket}/${bundle_key}" bundle.zip --region ap-southeast-2
+dnf install -y -q unzip >/dev/null 2>&1 || true
+unzip -oq bundle.zip -d repo
+bash repo/images/spike/spike.sh /opt/lab/spike.env > /opt/lab/spike.log 2>&1
+aws s3 cp /opt/lab/spike.log "s3://${bucket}/spike/${run_id}/${label}/spike.log" --region ap-southeast-2
+shutdown -h now "inference-lab spike finished"
