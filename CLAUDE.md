@@ -44,6 +44,7 @@ make account-checks   # read-only account report
 make baselines        # rules + Claude on the dataset (no AWS compute)
 make bootstrap        # boundary + artifacts bucket (long-lived, cents/month)
 make preflight        # everything an apply needs; exit 1 on any failure
+make test-aws-local   # the real deploy path against a local AWS emulator (moto); run before make spike
 make spike            # preflight, plan, owner's yes, apply, wait, collect, destroy: one summary
 ```
 

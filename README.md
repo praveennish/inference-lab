@@ -57,6 +57,7 @@ source scripts/aws-refresh.sh
 make install && make check
 make account-checks
 make baselines
-make bootstrap      # once
-make spike          # asks for yes before any spend; always destroys
+make test-aws-local  # rehearsal against a local AWS emulator: no account, no cost
+make bootstrap       # once
+make spike           # asks for yes before any spend; always destroys
 ```
