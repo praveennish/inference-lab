@@ -15,7 +15,7 @@ model router.
 
 | Day | Work | State |
 |---|---|---|
-| 1 | Account checks, rules and Claude baselines, vLLM arm64 and llama.cpp KleidiAI spike, ADRs | In progress |
+| 1 | Account checks, rules and Claude baselines, CPU spike (Graviton + x86): vLLM and llama.cpp KleidiAI, ADRs | In progress; `make spike` ready |
 | 2 | Cluster, images, all backends serving, first run | Not started |
 | 3 | Full matrix with repetitions, quality eval, report | Not started |
 | 4 | Decision table, router change, design doc, interview notes | Not started |
@@ -26,6 +26,9 @@ model router.
 |---|---|---|---|---|
 | Rules (pipeline-triage-agent `ac5bb27`) | 54/65 | 0.83 | 0.81 | `make baseline-rules` |
 | Claude Opus 5.5, Sonnet 5.5 | not yet run | | | `make baseline-claude` |
+
+**Scope of this iteration: CPU only** (Graviton vs x86). GPU (g6.xlarge, L4) is the next
+iteration, after the CPU comparison is complete and if the G/VT quota is granted.
 
 ## Method in one paragraph
 
@@ -54,4 +57,6 @@ source scripts/aws-refresh.sh
 make install && make check
 make account-checks
 make baselines
+make bootstrap      # once
+make spike          # asks for yes before any spend; always destroys
 ```

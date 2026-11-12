@@ -43,7 +43,8 @@ make check            # ruff, pytest, terraform fmt
 make account-checks   # read-only account report
 make baselines        # rules + Claude on the dataset (no AWS compute)
 make bootstrap        # boundary + artifacts bucket (long-lived, cents/month)
-make spike-plan && make spike-apply   # Day-1 spike; then spike-status, spike-results, spike-down
+make preflight        # everything an apply needs; exit 1 on any failure
+make spike            # preflight, plan, owner's yes, apply, wait, collect, destroy: one summary
 ```
 
 ## Working rules
