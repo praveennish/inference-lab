@@ -11,10 +11,16 @@ OUT_DIR=${OUT_DIR:-"build/results/$(date -u +%Y%m%dT%H%M%SZ)"}
 mkdir -p "$OUT_DIR"
 OUT="$OUT_DIR/preflight.md"
 FAILED=0
+# Only the local emulator test sets this: checks the emulator cannot answer are shown as SKIP.
+EMULATOR_GAPS=" ${PREFLIGHT_EMULATOR_GAPS:-} "
 
 check() {  # check <description> <command...>: PASS if the command succeeds
   local desc=$1; shift
   local detail
+  if [[ "$EMULATOR_GAPS" == *" $1 "* ]]; then
+    printf '| SKIP | %s | not emulated locally; checked on real AWS |\n' "$desc" >>"$OUT"
+    return 0
+  fi
   if detail=$("$@" 2>&1); then
     printf '| PASS | %s | %s |\n' "$desc" "$(echo "$detail" | tr '\n|' ' /' | cut -c1-140)" >>"$OUT"
   else
@@ -42,10 +48,11 @@ secret_ok() { aws secretsmanager describe-secret --secret-id triage/anthropic-ap
 default_vpc() { aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text | grep -v None; }
 offered() {  # type is offered in an AZ that has a default subnet
   local t=$1 azs subnets
+  # --output text separates values with tabs: normalise to spaces before matching.
   azs=$(aws ec2 describe-instance-type-offerings --location-type availability-zone \
-    --filters "Name=instance-type,Values=$t" --query 'InstanceTypeOfferings[].Location' --output text)
+    --filters "Name=instance-type,Values=$t" --query 'InstanceTypeOfferings[].Location' --output text | tr '\t' ' ')
   subnets=$(aws ec2 describe-subnets --filters Name=default-for-az,Values=true \
-    --query 'Subnets[].AvailabilityZone' --output text)
+    --query 'Subnets[].AvailabilityZone' --output text | tr '\t' ' ')
   for az in $azs; do [[ " $subnets " == *" $az "* ]] && { echo "$t in $az"; return 0; }; done
   echo "$t offered in [$azs], default subnets in [$subnets]"; return 1
 }
