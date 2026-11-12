@@ -6,6 +6,7 @@
 # Every step is recorded in steps.tsv; a failed step is logged and the rest still run.
 # Numbers from this script are spike evidence (one repetition), never report numbers.
 set -uo pipefail
+# shellcheck source=/dev/null
 source "$1"
 export AWS_DEFAULT_REGION=ap-southeast-2 HOME=/root PATH=/root/.local/bin:$PATH
 LAB=/opt/lab; REPO=$LAB/repo; OUT=$LAB/results; MODEL_DIR=$LAB/models/qwen
@@ -75,7 +76,11 @@ PY
 
 # ---------------------------------------------------------------------------
 # vLLM: try the official CPU image first (what Kubernetes will run), the CPU wheel second.
-VLLM_ENV=(-e VLLM_CPU_KVCACHE_SPACE=8 -e VLLM_CPU_OMP_THREADS_BIND=auto)
+# KV cache per token, Qwen2.5-1.5B BF16: 28 layers x 2 KV heads x 128 dim x 2 (K,V) x 2 bytes
+# = 28 KiB. 32 sequences x 4096 tokens = 3.5 GiB, so 4 GiB covers the worst case and leaves
+# room on a 16 GiB host for 3 GiB of weights and the runtime.
+KV_GIB=4
+VLLM_ENV=(-e "VLLM_CPU_KVCACHE_SPACE=$KV_GIB" -e VLLM_CPU_OMP_THREADS_BIND=auto)
 VLLM_ARGS=(--served-model-name "$SERVED" --dtype bfloat16 --max-model-len 4096
            --max-num-seqs 32 --seed 1234 --host 127.0.0.1 --port 8000)
 
@@ -108,7 +113,7 @@ vllm_start_wheel() {
   uv pip install -q --python /opt/lab/vllm-venv/bin/python "$url" \
     --extra-index-url https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match || return 1
   echo "wheel $url" > "$OUT/vllm_method.txt"
-  VLLM_CPU_KVCACHE_SPACE=8 VLLM_CPU_OMP_THREADS_BIND=auto nohup /opt/lab/vllm-venv/bin/vllm serve \
+  VLLM_CPU_KVCACHE_SPACE=$KV_GIB VLLM_CPU_OMP_THREADS_BIND=auto nohup /opt/lab/vllm-venv/bin/vllm serve \
     "$MODEL_DIR" "${VLLM_ARGS[@]}" > "$OUT/vllm_server.log" 2>&1 &
   echo $! > /opt/lab/vllm.pid
   wait_health http://127.0.0.1:8000/health 1200
@@ -117,6 +122,13 @@ vllm_start_wheel() {
 vllm_start() { vllm_start_image || vllm_start_wheel; }
 
 vllm_record() {
+  {
+    echo "method: $(cat "$OUT/vllm_method.txt")"
+    docker image inspect --format 'image_digest: {{index .RepoDigests 0}}' \
+      "vllm/vllm-openai-cpu:v$VLLM_VERSION" 2>/dev/null
+    echo "env: VLLM_CPU_KVCACHE_SPACE=$KV_GIB VLLM_CPU_OMP_THREADS_BIND=auto"
+    echo "args: ${VLLM_ARGS[*]}"
+  } > "$OUT/vllm_config.txt"
   curl -s http://127.0.0.1:8000/version > "$OUT/vllm_version.json"
   curl -s http://127.0.0.1:8000/v1/models > "$OUT/vllm_models.json"
   curl -s http://127.0.0.1:8000/v1/chat/completions -H 'Content-Type: application/json' -d \
@@ -134,7 +146,7 @@ vllm_bench() {  # spike-only throughput probe; the real harness comes on Day 2
       docker exec vllm "${bench[@]}" --tokenizer /models/qwen --max-concurrency "$c" \
         --result-dir /results --result-filename "vllm_bench_c$c.json" > "$OUT/vllm_bench_c$c.txt" 2>&1
     else
-      /opt/lab/vllm-venv/bin/"${bench[@]}" --tokenizer "$MODEL_DIR" --max-concurrency "$c" \
+      /opt/lab/vllm-venv/bin/vllm "${bench[@]:1}" --tokenizer "$MODEL_DIR" --max-concurrency "$c" \
         --result-dir "$OUT" --result-filename "vllm_bench_c$c.json" > "$OUT/vllm_bench_c$c.txt" 2>&1
     fi
   done
@@ -164,7 +176,7 @@ llama_build() {
     cmake --build "$LAB/build-$v" -j "$NPROC" --target llama-server llama-bench llama-quantize \
       > "$OUT/llama_build_$v.txt" 2>&1 || return 1
     grep -iE 'kleidi|GGML_CPU|native|march|mcpu' "$OUT/llama_cmake_$v.txt" "$LAB/build-$v/CMakeCache.txt" \
-      | grep -v '^#' | head -40 > "$OUT/llama_flags_$v.txt"
+      | grep -v '^#' | head -40 > "$OUT/llama_flags_$v.txt" || true  # no match is not a build failure
   done
 }
 

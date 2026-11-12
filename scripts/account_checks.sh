@@ -39,6 +39,7 @@ run aws ec2 describe-instance-type-offerings --region "$REGION" --location-type 
 end
 
 section "Instance details (vCPU, threads per core, memory, architecture)"
+# shellcheck disable=SC2046 # the list is split into arguments on purpose
 run aws ec2 describe-instance-types --region "$REGION" \
   --instance-types $(echo "$TYPES" | tr ',' ' ') \
   --query 'InstanceTypes[].[InstanceType,VCpuInfo.DefaultVCpus,VCpuInfo.DefaultCores,VCpuInfo.DefaultThreadsPerCore,MemoryInfo.SizeInMiB,ProcessorInfo.SupportedArchitectures[0],ProcessorInfo.Manufacturer]' \
