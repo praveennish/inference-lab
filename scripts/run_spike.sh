@@ -9,6 +9,8 @@ tf() { terraform -chdir=infra/spike "$@"; }
 tfb() { terraform -chdir=infra/bootstrap "$@"; }
 REGION=ap-southeast-2
 MAX_MINUTES=${MAX_MINUTES:-150}
+POLL_SECONDS=${SPIKE_POLL_SECONDS:-120}     # the local emulator test shortens these two
+GRACE_MINUTES=${SPIKE_GRACE_MINUTES:-10}
 
 mkdir -p build
 RUN=$(date -u +%Y%m%dT%H%M%SZ)
@@ -85,7 +87,7 @@ tf output -json > "$RES/outputs.json" 2>/dev/null
 ids=$(aws ec2 describe-instances --filters "Name=tag:stack,Values=spike" \
   "Name=instance-state-name,Values=pending,running" --query 'Reservations[].Instances[].InstanceId' --output text)
 echo "Hosts: ${ids:-none}"
-deadline=$((START + (MAX_MINUTES + 10) * 60))
+deadline=$((START + (MAX_MINUTES + GRACE_MINUTES) * 60))
 while [ -n "$ids" ] && [ "$(date +%s)" -lt "$deadline" ]; do
   live=$(aws ec2 describe-instances --instance-ids $ids \
     --query 'Reservations[].Instances[?State.Name!=`terminated`].InstanceId' --output text)
@@ -94,12 +96,13 @@ while [ -n "$ids" ] && [ "$(date +%s)" -lt "$deadline" ]; do
     last=$(aws s3 cp --quiet "s3://$BUCKET/spike/$RUN/$l/steps.tsv" - 2>/dev/null | tail -1 | cut -f1,2)
     printf '%s %-8s %s\n' "$(date -u +%H:%M)" "$l" "${last:-starting}"
   done
-  sleep 120
+  sleep "$POLL_SECONDS"
 done
+[ -n "${live:-}" ] && echo "Deadline reached with hosts still alive: $live (destroy will remove them)"
 
 # ------------------------------------------------------------------ collect
 aws s3 sync --quiet "s3://$BUCKET/spike/$RUN/" "$RES/" --exclude bundle.zip
-EKS=$(aws eks describe-cluster --name inference-lab-probe --query 'cluster.[status,version,platformVersion]' --output text 2>&1)
+EKS=$(aws eks describe-cluster --name inference-lab-probe --query 'cluster.[status,version,platformVersion]' --output text 2>&1 | tr '\n\t' '  ')
 {
   echo "# Spike $RUN"
   echo
