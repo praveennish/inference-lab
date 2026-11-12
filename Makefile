@@ -10,7 +10,7 @@ BASELINE_DIR ?= build/results/baselines-$(shell date -u +%Y%m%d)
 SPIKE_RUN    ?= $(shell cat build/spike_run_id 2>/dev/null)
 
 .PHONY: install check lint test tf-fmt account-checks preflight baseline-rules baseline-claude \
-        baselines bootstrap spike spike-plan spike-apply spike-status spike-results spike-down leftovers
+        baselines bootstrap spike test-aws-local spike-plan spike-apply spike-status spike-results spike-down leftovers
 
 install:
 	uv sync --all-groups
@@ -96,3 +96,7 @@ leftovers:
 		| grep -vE ':s3:::|:policy/' || echo "No compute left (bucket and boundary stay by design)."
 	@aws ec2 describe-instances --filters Name=instance-state-name,Values=pending,running,stopping,stopped \
 		--query 'Reservations[].Instances[].[InstanceId,InstanceType,State.Name]' --output text
+
+# The real deploy path against a local AWS emulator (moto). No AWS account, no cost.
+test-aws-local:
+	uv run ./scripts/local_aws/test.sh
