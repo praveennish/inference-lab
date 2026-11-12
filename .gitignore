@@ -10,3 +10,4 @@ __pycache__/
 .terraform.lock.hcl.bak
 node_modules/
 .terraform.lock.hcl
+.bundle-commit

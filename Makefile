@@ -9,8 +9,8 @@ TF_SPIKE      = terraform -chdir=infra/spike
 BASELINE_DIR ?= build/results/baselines-$(shell date -u +%Y%m%d)
 SPIKE_RUN    ?= $(shell cat build/spike_run_id 2>/dev/null)
 
-.PHONY: install check lint test tf-fmt account-checks baseline-rules baseline-claude baselines \
-        bootstrap spike-plan spike-apply spike-status spike-results spike-down leftovers
+.PHONY: install check lint test tf-fmt account-checks preflight baseline-rules baseline-claude \
+        baselines bootstrap spike spike-plan spike-apply spike-status spike-results spike-down leftovers
 
 install:
 	uv sync --all-groups
@@ -30,6 +30,9 @@ tf-fmt:
 # ---------------------------------------------------------------- Day 1: no compute
 account-checks:
 	./scripts/account_checks.sh
+
+preflight:
+	./scripts/preflight.sh
 
 baseline-rules:
 	uv run python -m bench.classify.run rules --run-dir $(BASELINE_DIR)
@@ -51,11 +54,17 @@ bootstrap:
 	$(TF_BOOT) apply boot.tfplan
 
 # ---------------------------------------------------------------- Day 1 spike (destroy same day)
+# The normal path: preflight, plan, your yes, apply, wait, collect, destroy. One summary file.
+spike:
+	./scripts/run_spike.sh
+
+# Manual steps, for debugging the spike stack.
 BOOT_VARS = -var="boundary_arn=$$($(TF_BOOT) output -raw boundary_arn)" \
             -var="artifacts_bucket=$$($(TF_BOOT) output -raw artifacts_bucket)"
 
 spike-plan:
 	@mkdir -p build; [ -s build/spike_run_id ] || date -u +%Y%m%dT%H%M%SZ > build/spike_run_id
+	@git rev-parse HEAD > .bundle-commit
 	$(TF_SPIKE) init -input=false -reconfigure \
 		-backend-config="bucket=$(STATE_BUCKET)" -backend-config="region=$(REGION)"
 	$(TF_SPIKE) plan $(BOOT_VARS) -var="run_id=$$(cat build/spike_run_id)" -out=spike.tfplan
