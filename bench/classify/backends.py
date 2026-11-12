@@ -14,7 +14,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 
@@ -101,7 +101,9 @@ class AnthropicBackend:
     is set explicitly. Structured output restricts the answer to the four classes. No
     server-side fallback: a refusal must be recorded, not silently answered by another model."""
 
-    def __init__(self, model: str, effort: str = "low", max_tokens: int = 2048) -> None:
+    def __init__(
+        self, model: str, effort: str = "low", max_tokens: int = 2048, client: Any = None
+    ) -> None:
         import anthropic
 
         if model not in ANTHROPIC_PRICES:
@@ -110,7 +112,9 @@ class AnthropicBackend:
         self.model = model
         self.effort = effort
         self.max_tokens = max_tokens
-        self._client = anthropic.Anthropic(api_key=_anthropic_key(), max_retries=4)
+        # A client can be injected (tests use a mock transport); otherwise the key comes from
+        # Secrets Manager.
+        self._client = client or anthropic.Anthropic(api_key=_anthropic_key(), max_retries=4)
         self._sdk_version = anthropic.__version__
 
     def describe(self) -> dict[str, object]:
@@ -191,13 +195,14 @@ class OpenAICompatBackend:
         constrained: bool = False,
         seed: int = 1234,
         timeout_s: float = 120.0,
+        http_client: httpx.Client | None = None,
     ) -> None:
         self.name = name
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.constrained = constrained
         self.seed = seed
-        self._http = httpx.Client(timeout=timeout_s)
+        self._http = http_client or httpx.Client(timeout=timeout_s)
 
     def describe(self) -> dict[str, object]:
         info: dict[str, object] = {
@@ -278,4 +283,6 @@ def _git_commit(repo: Path) -> str:
         )
         return out.stdout.strip()
     except (OSError, subprocess.CalledProcessError):
-        return "unknown"
+        # The spike hosts get a zip, not a clone; `make spike-plan` stamps the commit into it.
+        stamp = repo / ".bundle-commit"
+        return stamp.read_text().strip() if stamp.exists() else "unknown"
