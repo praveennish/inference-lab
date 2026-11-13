@@ -11,6 +11,10 @@ REGION=ap-southeast-2
 MAX_MINUTES=${MAX_MINUTES:-150}
 POLL_SECONDS=${SPIKE_POLL_SECONDS:-120}     # the local emulator test shortens these two
 GRACE_MINUTES=${SPIKE_GRACE_MINUTES:-10}
+ENABLE_GPU=${ENABLE_GPU:-0}                 # make spike GPU=1 adds the g6.xlarge host
+LABELS=(graviton x86); GPU_TF=false
+if [ "$ENABLE_GPU" = 1 ]; then LABELS+=(gpu); GPU_TF=true; fi
+export ENABLE_GPU                           # preflight checks the GPU quota and image too
 
 mkdir -p build
 RUN=$(date -u +%Y%m%dT%H%M%SZ)
@@ -34,7 +38,8 @@ tfb init -input=false -reconfigure -backend-config="bucket=$STATE_BUCKET" \
 BOUNDARY=$(tfb output -raw boundary_arn)
 BUCKET=$(tfb output -raw artifacts_bucket)
 VARS=(-var="boundary_arn=$BOUNDARY" -var="artifacts_bucket=$BUCKET" -var="run_id=$RUN"
-      -var="max_minutes=$MAX_MINUTES")
+      -var="max_minutes=$MAX_MINUTES" -var="enable_gpu=$GPU_TF")
+[ -n "${GPU_AMI_PARAM:-}" ] && VARS+=(-var="gpu_ami_parameter=$GPU_AMI_PARAM")
 
 # ------------------------------------------------------------------ plan and approval
 tf init -input=false -reconfigure -backend-config="bucket=$STATE_BUCKET" \
@@ -44,15 +49,18 @@ echo
 echo "Resources to create:"
 grep -E '^  # .* will be created' "$RES/plan.txt" | sed 's/^  # /  /; s/ will be created//'
 grep -E '^Plan:' "$RES/plan.txt"
-cat <<EOF
-
-Estimated cost (on-demand, Sydney; ESTIMATES, check the EC2 console):
-  c8g.2xlarge ~\$0.40/h, c7i.2xlarge ~\$0.45/h, EKS control plane \$0.10/h,
-  2 x 80 GB gp3 + 2 public IPv4 ~\$0.03/h  =>  ~\$1.00/h.
-  Hosts terminate themselves after at most $MAX_MINUTES minutes; this script then destroys
-  everything, EKS probe included. Worst case ~\$$(python3 -c "print(round($MAX_MINUTES/60*1.0+0.2,2))").
-
-EOF
+HOURLY=1.0
+echo
+echo "Estimated cost (on-demand, Sydney; ESTIMATES, check the EC2 console):"
+echo '  c8g.2xlarge ~$0.40/h, c7i.2xlarge ~$0.45/h, EKS control plane $0.10/h,'
+echo '  2 x 80 GB gp3 + 2 public IPv4 ~$0.03/h  =>  ~$1.00/h.'
+if [ "$ENABLE_GPU" = 1 ]; then
+  HOURLY=2.1
+  echo '  GPU host: g6.xlarge ~$1.05/h + 150 GB gp3 and IPv4 ~$0.03/h  =>  total ~$2.10/h.'
+fi
+echo "  Hosts terminate themselves after at most $MAX_MINUTES minutes; this script then destroys"
+echo "  everything, EKS probe included. Worst case ~\$$(python3 -c "print(round($MAX_MINUTES/60*$HOURLY+0.2,2))")."
+echo
 read -r -p "Apply, run the spike, then destroy everything? Type yes: " answer
 [ "$answer" = yes ] || { echo "Not applied."; exit 0; }
 
@@ -92,7 +100,7 @@ while [ -n "$ids" ] && [ "$(date +%s)" -lt "$deadline" ]; do
   live=$(aws ec2 describe-instances --instance-ids $ids \
     --query 'Reservations[].Instances[?State.Name!=`terminated`].InstanceId' --output text)
   [ -z "$live" ] && break
-  for l in graviton x86; do
+  for l in "${LABELS[@]}"; do
     last=$(aws s3 cp --quiet "s3://$BUCKET/spike/$RUN/$l/steps.tsv" - 2>/dev/null | tail -1 | cut -f1,2)
     printf '%s %-8s %s\n' "$(date -u +%H:%M)" "$l" "${last:-starting}"
   done
@@ -113,7 +121,7 @@ EKS=$(aws eks describe-cluster --name inference-lab-probe --query 'cluster.[stat
   echo
   sed -n '/^| Result/,$p' "$RES/preflight.md"
   echo
-  for l in graviton x86; do
+  for l in "${LABELS[@]}"; do
     if [ -f "$RES/$l/spike-summary.md" ]; then cat "$RES/$l/spike-summary.md"
     else echo "## $l: no spike-summary.md (see $RES/$l/spike.log)"; fi
     echo

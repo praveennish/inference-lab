@@ -7,6 +7,10 @@ set -uo pipefail
 REGION=ap-southeast-2
 SPIKE_TYPES=(c8g.2xlarge c7i.2xlarge)   # must match infra/spike variable "instances"
 NEED_VCPU=16
+ENABLE_GPU=${ENABLE_GPU:-0}             # 1: also check the GPU host (make spike GPU=1)
+GPU_TYPE=g6.xlarge; GPU_VCPU=4           # must match infra/spike gpu_instance_type
+# Override if AWS renames it; run_spike passes the same value to Terraform.
+GPU_AMI_PARAM=${GPU_AMI_PARAM:-/aws/service/deeplearning/ami/x86_64/base-oss-nvidia-driver-gpu-amazon-linux-2023/latest/ami-id}
 OUT_DIR=${OUT_DIR:-"build/results/$(date -u +%Y%m%dT%H%M%SZ)"}
 mkdir -p "$OUT_DIR"
 OUT="$OUT_DIR/preflight.md"
@@ -65,6 +69,21 @@ vcpu_quota() {
   running=${running:-0}; [ "$running" = None ] && running=0
   python3 -c "import sys;q=float('$quota');r=2*float('$running');print(f'quota {q:.0f}, in use <= {r:.0f}, need {$NEED_VCPU}');sys.exit(0 if q-r>=$NEED_VCPU else 1)"
 }
+gpu_quota() {  # G and VT on-demand vCPUs; new accounts often have 0
+  local q; q=$(aws service-quotas get-service-quota --service-code ec2 --quota-code L-DB2E81BA --query Quota.Value --output text) || return 1
+  python3 -c "import sys;q=float('$q');print(f'G and VT quota {q:.0f}, need $GPU_VCPU');sys.exit(0 if q>=$GPU_VCPU else 1)" \
+    || { echo "quota too low: run make gpu-quota-request and wait for approval"; return 1; }
+}
+gpu_ami() {  # the GPU image parameter must resolve in this account and region
+  local id; id=$(aws ssm get-parameter --name "$GPU_AMI_PARAM" --query Parameter.Value --output text 2>/dev/null)
+  if [ -n "$id" ] && [ "$id" != None ]; then echo "$id from $GPU_AMI_PARAM"; return 0; fi
+  echo "parameter $GPU_AMI_PARAM not found; newest Amazon DLAMI base GPU images:"
+  aws ec2 describe-images --owners amazon --filters "Name=name,Values=Deep Learning Base*GPU*Amazon Linux 2023*" \
+    "Name=architecture,Values=x86_64" --query 'reverse(sort_by(Images,&CreationDate))[:2].[ImageId,Name]' --output text
+  aws ssm get-parameters-by-path --path /aws/service/deeplearning/ami/x86_64 --query 'Parameters[].Name' \
+    --output text 2>/dev/null | tr '\t' '\n' | grep -i 'amazon-linux-2023' | head -5
+  return 1
+}
 eks_api() { aws eks list-clusters --query 'clusters' --output text; echo "(list allowed; create is proven only by the probe)"; }
 nothing_running() {
   local left; left=$(aws ec2 describe-instances --filters Name=tag:project,Values=inference-lab \
@@ -97,6 +116,11 @@ check "Anthropic key secret exists" secret_ok
 check "Default VPC" default_vpc
 for t in "${SPIKE_TYPES[@]}"; do check "$t offered with a default subnet" offered "$t"; done
 check "On-demand standard vCPU quota" vcpu_quota
+if [ "$ENABLE_GPU" = 1 ]; then
+  check "$GPU_TYPE offered with a default subnet" offered "$GPU_TYPE"
+  check "GPU (G and VT) vCPU quota >= $GPU_VCPU" gpu_quota
+  check "GPU image (Deep Learning Base AMI, AL2023) resolves" gpu_ami
+fi
 check "EKS API reachable" eks_api
 check "No inference-lab instances left running" nothing_running
 printf '| INFO | Remaining credit | %s |\n' "$(credit | tr '\n\t' '  ')" >>"$OUT"
