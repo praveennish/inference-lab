@@ -20,4 +20,5 @@ in any per-dollar result.
 | Date | Stack | Resources | Estimated USD/hour | Planned hours | Approved | Measured USD |
 |---|---|---|---|---|---|---|
 | 2026-11-11 | bootstrap | IAM policy, S3 bucket | ~0 (storage cents/month) | long-lived | pending | |
+| 2026-11-13 | spike GPU=1 (adds g6.xlarge, 150 GB gp3) | only after the G and VT quota is granted | ~2.10 total (*estimate*: g6.xlarge ~1.05) | ≤ 2.5 (hard cap) | pending | |
 | 2026-11-12 | spike (CPU only; GPU next iteration) | c8g.2xlarge, c7i.2xlarge, 2 × 80 GB gp3, 2 public IPv4, EKS control plane | ~1.00 (*estimate*: c8g ~0.40, c7i ~0.45, EKS 0.10, EBS+IPv4 ~0.03) | ≤ 2.5 (hard cap) | pending | |

@@ -27,8 +27,9 @@ model router.
 | Rules (pipeline-triage-agent `ac5bb27`) | 54/65 | 0.83 | 0.81 | `make baseline-rules` |
 | Claude Opus 5.5, Sonnet 5.5 | not yet run | | | `make baseline-claude` |
 
-**Scope of this iteration: CPU only** (Graviton vs x86). GPU (g6.xlarge, L4) is the next
-iteration, after the CPU comparison is complete and if the G/VT quota is granted.
+**Scope:** CPU first (Graviton vs x86). GPU (g6.xlarge, 1 x L4) is built and tested without a GPU,
+and runs with `make spike GPU=1` once the G and VT quota is granted (`make gpu-quota-request`,
+[ADR 0007](docs/adr/0007-gpu-reference-host.md)).
 
 ## Method in one paragraph
 
@@ -58,6 +59,7 @@ make install && make check
 make account-checks
 make baselines
 make test-aws-local  # rehearsal against a local AWS emulator: no account, no cost
+make rehearse-spike  # the real spike.sh on this machine (needs Docker); GPU branch: rehearse-spike-gpu
 make bootstrap       # once
 make spike           # asks for yes before any spend; always destroys
 ```

@@ -8,9 +8,10 @@ TF_BOOT       = terraform -chdir=infra/bootstrap
 TF_SPIKE      = terraform -chdir=infra/spike
 BASELINE_DIR ?= build/results/baselines-$(shell date -u +%Y%m%d)
 SPIKE_RUN    ?= $(shell cat build/spike_run_id 2>/dev/null)
+GPU          ?= 0     # make spike GPU=1 adds the g6.xlarge host (needs the G and VT quota)
 
 .PHONY: install check lint test tf-fmt account-checks preflight baseline-rules baseline-claude \
-        baselines bootstrap spike test-aws-local spike-plan spike-apply spike-status spike-results spike-down leftovers
+        baselines bootstrap spike gpu-quota gpu-quota-request test-aws-local rehearse-spike rehearse-spike-gpu spike-plan spike-apply spike-status spike-results spike-down leftovers
 
 install:
 	uv sync --all-groups
@@ -32,7 +33,13 @@ account-checks:
 	./scripts/account_checks.sh
 
 preflight:
-	./scripts/preflight.sh
+	ENABLE_GPU=$(GPU) ./scripts/preflight.sh
+
+gpu-quota:
+	./scripts/gpu_quota.sh
+
+gpu-quota-request:
+	./scripts/gpu_quota.sh request
 
 baseline-rules:
 	uv run python -m bench.classify.run rules --run-dir $(BASELINE_DIR)
@@ -56,7 +63,7 @@ bootstrap:
 # ---------------------------------------------------------------- Day 1 spike (destroy same day)
 # The normal path: preflight, plan, your yes, apply, wait, collect, destroy. One summary file.
 spike:
-	./scripts/run_spike.sh
+	ENABLE_GPU=$(GPU) ./scripts/run_spike.sh
 
 # Manual steps, for debugging the spike stack.
 BOOT_VARS = -var="boundary_arn=$$($(TF_BOOT) output -raw boundary_arn)" \
@@ -100,3 +107,10 @@ leftovers:
 # The real deploy path against a local AWS emulator (moto). No AWS account, no cost.
 test-aws-local:
 	uv run ./scripts/local_aws/test.sh
+
+# The real spike.sh on this machine (x86 + Docker): vLLM CPU image, llama.cpp, evals, summary.
+rehearse-spike:
+	uv run ./scripts/local_spike/rehearse.sh
+
+rehearse-spike-gpu:
+	REHEARSAL_GPU=1 uv run ./scripts/local_spike/rehearse.sh

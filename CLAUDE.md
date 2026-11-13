@@ -45,7 +45,10 @@ make baselines        # rules + Claude on the dataset (no AWS compute)
 make bootstrap        # boundary + artifacts bucket (long-lived, cents/month)
 make preflight        # everything an apply needs; exit 1 on any failure
 make test-aws-local   # the real deploy path against a local AWS emulator (moto); run before make spike
+make rehearse-spike   # the real spike.sh locally (Docker): vLLM CPU, llama.cpp, evals; -gpu for the GPU branch
 make spike            # preflight, plan, owner's yes, apply, wait, collect, destroy: one summary
+make gpu-quota        # read the G and VT quota; gpu-quota-request files one request for 4 vCPUs
+make spike GPU=1      # adds the g6.xlarge reference host (needs the quota)
 ```
 
 ## Working rules

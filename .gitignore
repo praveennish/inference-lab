@@ -13,3 +13,4 @@ node_modules/
 .bundle-commit
 *_override.tf
 .terraform-local/
+.terraform-validate/
