@@ -67,6 +67,28 @@ export NO_PROXY=localhost no_proxy=localhost
 export TF_DATA_DIR=.terraform-local
 aws sts get-caller-identity --query Account --output text | grep -q "$ACCOUNT" || { echo "emulator not answering"; exit 2; }
 
+# moto does not emulate Service Quotas for EC2. A thin wrapper answers those three calls from
+# files (so preflight's quota checks are really exercised, at chosen values) and passes every
+# other call to the real AWS CLI unchanged.
+QUOTA_DIR="$WORK/quota"; mkdir -p "$QUOTA_DIR" "$WORK/shim"
+REAL_AWS=$(command -v aws)
+cat >"$WORK/shim/aws" <<EOF
+#!/bin/bash
+case " \$* " in
+  *" get-service-quota "*)
+    code=\$(echo "\$*" | grep -oE 'L-[0-9A-F]+'); v=\$(cat "$QUOTA_DIR/\$code" 2>/dev/null || echo 0)
+    echo "\$v" ;;
+  *" list-requested-service-quota-change-history-by-quota "*) cat "$QUOTA_DIR/open" 2>/dev/null; true ;;
+  *" request-service-quota-increase "*)
+    echo "\$*" >>"$QUOTA_DIR/requests.log"; printf 'req-1\tRunning On-Demand G and VT instances\t4.0\tPENDING\n' ;;
+  *) exec "$REAL_AWS" "\$@" ;;
+esac
+EOF
+chmod +x "$WORK/shim/aws"
+export PATH="$WORK/shim:$PATH"
+quota() { echo "$2" >"$QUOTA_DIR/$1"; }   # quota <code> <value>
+quota L-1216C47A 64; quota L-DB2E81BA 0
+
 # Point Terraform's provider and S3 backend at the emulator without touching the real files.
 for stack in bootstrap spike; do
   cat >"infra/$stack/zz_local_aws_override.tf" <<EOF
@@ -125,7 +147,7 @@ expect "Bootstrap state written with a lock-file backend" \
   aws s3api head-object --bucket "triage-tfstate-$ACCOUNT-$REGION" --key inference-lab/bootstrap.tfstate
 
 # ------------------------------------------------------------------ 2. preflight
-GAPS="vcpu_quota"   # Service Quotas for EC2 is not emulated by moto
+GAPS=""   # quotas answered by the wrapper above; nothing skipped
 PREFLIGHT_EMULATOR_GAPS=$GAPS OUT_DIR="$RES/preflight" ./scripts/preflight.sh >"$RES/preflight.txt" 2>&1
 expect "Preflight passes on a clean account (gaps shown as SKIP: $GAPS)" grep -q "Preflight passed" "$RES/preflight.txt"
 AWS_ACCESS_KEY_ID=AKIAFAKE PREFLIGHT_EMULATOR_GAPS=$GAPS OUT_DIR="$RES/preflight-bad" \
@@ -146,7 +168,7 @@ fake_hosts() {  # wait for the instances, then behave like spike.sh + user-data 
     run=$(cat build/spike_run_id 2>/dev/null)
     ids=$(aws ec2 describe-instances --filters Name=tag:stack,Values=spike Name=instance-state-name,Values=running \
       --query 'Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`]|[0].Value]' --output text)
-    [ "$(echo "$ids" | grep -c .)" -ge 2 ] && break
+    [ "$(echo "$ids" | grep -c .)" -ge "${EXPECT_HOSTS:-2}" ] && break
     sleep 2
   done
   # A real host needs minutes before it can shut down; finish only after the apply has.
@@ -167,9 +189,11 @@ fake_hosts() {  # wait for the instances, then behave like spike.sh + user-data 
 
 capture_before_destroy() {  # inspect what the apply created while it exists
   for _ in $(seq 120); do
-    [ "$(wc -l <"$RES/fake_hosts.txt" 2>/dev/null || echo 0)" -ge 2 ] && break; sleep 2
+    [ "$(cat "$RES/fake_hosts.txt" 2>/dev/null | wc -l)" -ge "${EXPECT_HOSTS:-2}" ] && break; sleep 2
   done
-  aws ec2 describe-instances --filters Name=tag:stack,Values=spike >"$RES/instances.json"
+  aws ec2 describe-instances --filters Name=tag:stack,Values=spike \
+    "Name=instance-state-name,Values=pending,running,shutting-down" >"$RES/instances.json"
+  terraform -chdir=infra/spike show -json spike.tfplan >"$RES/plan.json" 2>/dev/null
   aws iam get-role --role-name inference-lab-spike >"$RES/role-spike.json" 2>&1
   aws iam get-role --role-name inference-lab-eks-probe >"$RES/role-eks.json" 2>&1
   aws eks describe-cluster --name inference-lab-probe >"$RES/eks.json" 2>&1
@@ -181,6 +205,7 @@ capture_before_destroy() {  # inspect what the apply created while it exists
     --query InstanceInitiatedShutdownBehavior.Value --output text >"$RES/shutdown-behavior.txt" 2>&1
 }
 
+rm -f "$RES/fake_hosts.txt"
 capture_before_destroy &
 CAP=$!
 fake_hosts &
@@ -229,6 +254,63 @@ echo yes | PREFLIGHT_EMULATOR_GAPS=$GAPS MAX_MINUTES=1 SPIKE_POLL_SECONDS=10 SPI
 expect "Hung hosts: deadline is reported" grep -q "Deadline reached" "$RES/spike-hung.txt"
 expect "Hung hosts: destroy still runs" grep -q "Destroyed." "$RES/spike-hung.txt"
 expect "Hung hosts: nothing left running" test -z "$(aws ec2 describe-instances --filters Name=tag:project,Values=inference-lab \
+  Name=instance-state-name,Values=pending,running,stopping,stopped --query 'Reservations[].Instances[].InstanceId' --output text)"
+
+# ------------------------------------------------------------------ 6. GPU: quota and image gates
+expect "Preflight without GPU: vCPU quota really checked (not skipped)" grep -q '| PASS | On-demand standard vCPU quota' "$RES/preflight/preflight.md"
+ENABLE_GPU=1 OUT_DIR="$RES/preflight-gpu0" ./scripts/preflight.sh >"$RES/preflight-gpu0.txt" 2>&1
+expect "GPU quota 0: preflight fails" grep -q "Preflight FAILED" "$RES/preflight-gpu0.txt"
+expect "GPU quota 0: the GPU quota row is the failure" grep -q '| \*\*FAIL\*\* | GPU (G and VT) vCPU quota' "$RES/preflight-gpu0/preflight.md"
+quota L-DB2E81BA 4
+ENABLE_GPU=1 OUT_DIR="$RES/preflight-noami" ./scripts/preflight.sh >"$RES/preflight-noami.txt" 2>&1
+expect "Missing GPU image parameter: preflight fails on that row" grep -q '| \*\*FAIL\*\* | GPU image' "$RES/preflight-noami/preflight.md"
+quota L-DB2E81BA 0
+echo yes | ENABLE_GPU=1 ./scripts/run_spike.sh >"$RES/spike-gpu-blocked.txt" 2>&1
+expect "GPU quota 0: make spike GPU=1 stops before planning" bash -c "! grep -q 'Resources to create' $RES/spike-gpu-blocked.txt"
+expect "GPU quota 0: nothing launched" test -z "$(aws ec2 describe-instances --filters Name=tag:project,Values=inference-lab \
+  Name=instance-state-name,Values=pending,running --query 'Reservations[].Instances[].InstanceId' --output text)"
+
+# ------------------------------------------------------------------ 7. GPU quota requests
+./scripts/gpu_quota.sh request >"$RES/quota-req1.txt" 2>&1
+expect "Quota request filed for 4 vCPUs when below 4" grep -q -- '--desired-value 4' "$QUOTA_DIR/requests.log"
+printf 'req-1\t4.0\tPENDING\t2026-11-13\n' >"$QUOTA_DIR/open"
+./scripts/gpu_quota.sh request >"$RES/quota-req2.txt" 2>&1
+expect "No duplicate request while one is open" bash -c "grep -q 'already open' $RES/quota-req2.txt && [ \$(wc -l <$QUOTA_DIR/requests.log) -eq 1 ]"
+rm -f "$QUOTA_DIR/open"; quota L-DB2E81BA 4
+./scripts/gpu_quota.sh request >"$RES/quota-req3.txt" 2>&1
+expect "No request when the quota is already 4" grep -q 'nothing to request' "$RES/quota-req3.txt"
+
+# ------------------------------------------------------------------ 8. GPU spike, three hosts
+TEST_AMI=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+  --query Parameter.Value --output text)
+aws ssm put-parameter --name /inference-lab/test/gpu-ami --type String --value "$TEST_AMI" >/dev/null
+export GPU_AMI_PARAM=/inference-lab/test/gpu-ami
+rm -f "$RES/fake_hosts.txt"
+EXPECT_HOSTS=3 capture_before_destroy &
+CAP=$!
+EXPECT_HOSTS=3 fake_hosts &
+FAKE=$!
+echo yes | EXPECT_HOSTS=3 ENABLE_GPU=1 MAX_MINUTES=5 SPIKE_POLL_SECONDS=5 SPIKE_GRACE_MINUTES=1 \
+  ./scripts/run_spike.sh >"$RES/spike-gpu.txt" 2>&1
+EXPECT_HOSTS=3 wait "$FAKE" "$CAP"
+unset GPU_AMI_PARAM
+RUN=$(cat build/spike_run_id)
+SUMMARY="build/results/spike-$RUN/summary.md"
+expect "GPU spike: cost shown includes the GPU host" grep -q 'g6.xlarge ~\$1.05/h' "$RES/spike-gpu.txt"
+expect "GPU spike: apply succeeded" grep -q "Apply: ok" "$SUMMARY"
+expect "GPU spike: three hosts launched" test "$(grep -c . "$RES/fake_hosts.txt")" = 3
+expect "GPU host is g6.xlarge on the GPU image, 150 GB root" python3 -c "
+import json,sys;r=json.load(open('$RES/instances.json'))['Reservations']
+g=[x for y in r for x in y['Instances'] if any(t['Key']=='Name' and t['Value'].endswith('-gpu') for t in x['Tags'])]
+sys.exit(0 if len(g)==1 and g[0]['InstanceType']=='g6.xlarge' and g[0]['ImageId']=='$TEST_AMI' else 1)"
+expect "GPU host planned with a 150 GB encrypted gp3 root and the GPU image parameter" python3 -c "
+import json,sys;p=json.load(open('$RES/plan.json'))
+g=[r for r in p['resource_changes'] if r['address']=='aws_instance.spike[\\\"gpu\\\"]'][0]['change']['after']
+d=g['root_block_device'][0]
+sys.exit(0 if d['volume_size']==150 and d['volume_type']=='gp3' and d['encrypted'] and g['instance_type']=='g6.xlarge' else 1)"
+expect "GPU spike: summary has the gpu host section" grep -q 'gpu (simulated' "$SUMMARY"
+expect "GPU spike: destroy ran" grep -q "Destroyed." "$RES/spike-gpu.txt"
+expect "GPU spike: nothing left running" test -z "$(aws ec2 describe-instances --filters Name=tag:project,Values=inference-lab \
   Name=instance-state-name,Values=pending,running,stopping,stopped --query 'Reservations[].Instances[].InstanceId' --output text)"
 
 {
