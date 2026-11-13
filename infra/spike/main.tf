@@ -23,8 +23,15 @@ data "aws_subnet" "default" {
   id       = each.value
 }
 
+# CPU hosts always; the GPU host only when enable_gpu is set.
+locals {
+  hosts = merge(var.instances, var.enable_gpu ? {
+    gpu = { type = var.gpu_instance_type, arch = "x86_64" }
+  } : {})
+}
+
 data "aws_ec2_instance_type_offerings" "spike" {
-  for_each      = var.instances
+  for_each      = local.hosts
   location_type = "availability-zone"
   filter {
     name   = "instance-type"
@@ -43,6 +50,11 @@ locals {
 data "aws_ssm_parameter" "al2023" {
   for_each = toset(["arm64", "x86_64"])
   name     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-${each.key}"
+}
+
+data "aws_ssm_parameter" "gpu_ami" {
+  count = var.enable_gpu ? 1 : 0
+  name  = var.gpu_ami_parameter
 }
 
 # The harness and dataset, so the instances run the same eval code as the Codespace.
@@ -129,9 +141,9 @@ resource "aws_instance" "spike" {
   #checkov:skip=CKV_AWS_88:Public IP needed for outbound internet in the default VPC (no NAT); no inbound rules.
   #checkov:skip=CKV_AWS_126:Detailed monitoring not needed for a 2-hour spike.
   #checkov:skip=CKV2_AWS_41:Instance profile is attached.
-  for_each = var.instances
+  for_each = local.hosts
 
-  ami                                  = data.aws_ssm_parameter.al2023[each.value.arch].value
+  ami                                  = each.key == "gpu" ? data.aws_ssm_parameter.gpu_ami[0].value : data.aws_ssm_parameter.al2023[each.value.arch].value
   instance_type                        = each.value.type
   subnet_id                            = local.spike_subnet[each.key]
   vpc_security_group_ids               = [aws_security_group.spike.id]
@@ -146,7 +158,7 @@ resource "aws_instance" "spike" {
 
   root_block_device {
     volume_type = "gp3"
-    volume_size = 80
+    volume_size = each.key == "gpu" ? 150 : 80 # the CUDA image and the GPU AMI need more room
     encrypted   = true
   }
 
