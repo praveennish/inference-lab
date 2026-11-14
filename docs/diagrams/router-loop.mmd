@@ -1,0 +1,17 @@
+flowchart LR
+    ev["Job Failed event<br/>error_code · message · attempt"] --> rules{"Rule classifier<br/>(free, exact)"}
+    rules -->|"matched on our own error code"| done1["Class settled by rules<br/>no model call"]
+    rules -->|"message match or no match<br/>(where rules miss: 11/65)"| small["Small model on the chosen backend<br/>OpenAI-compatible endpoint<br/>constrained to 4 classes"]
+    small -->|"valid class, healthy, within latency SLO"| done2["Class from small model<br/>cost per call ≈ backend $/token"]
+    small -->|"timeout · error · unhealthy"| claude["Claude (existing provider)<br/>fallback"]
+    claude --> done3["Class from Claude"]
+    done1 & done2 & done3 --> agent["Rest of the triage agent<br/>(unchanged)"]
+
+    subgraph EVID["Evidence that sets the route (this repo)"]
+        acc["Accuracy per backend<br/>on the 65-example dataset"]
+        cost["Cost per 1M output tokens<br/>at the latency target"]
+        lat["p95 latency at the planned concurrency"]
+    end
+    EVID -.->|"decision table"| small
+    classDef planned fill:#f7f0ff,stroke:#7a4fb5,stroke-dasharray: 5 3
+    class small,done2,claude,done3 planned

@@ -1,0 +1,33 @@
+flowchart TB
+    subgraph K8S["Kubernetes · planned"]
+        direction TB
+        subgraph SYS["System node"]
+            direction LR
+            op["BenchmarkRun CRD + kopf operator<br/>optional, last"]
+            loadgen["Load generator Job<br/>concurrency × input × output"]
+            evaljob["Quality eval Job<br/>bench/classify"]
+            prom["Prometheus + Grafana"]
+        end
+        subgraph SERVE["Model nodes · 1 pod each"]
+            direction LR
+            v_arm["arm64 · c8g.2xlarge<br/>vLLM CPU pod"]
+            l_arm["arm64 · c8g.2xlarge<br/>llama.cpp pod · KleidiAI"]
+            v_x86["amd64 · c7i.2xlarge<br/>vLLM CPU pod"]
+            v_gpu["gpu (tainted) · g6.xlarge<br/>vLLM CUDA pod · if quota"]
+        end
+    end
+    ecr[("ECR<br/>images built natively per arch")]
+    s3[("S3<br/>weights · Parquet results + run metadata")]
+    report["Report<br/>decision table · cost per 1M output tokens at a latency target"]
+
+    op -.->|"creates"| loadgen & evaljob
+    loadgen -->|"OpenAI-compatible HTTP, streaming"| SERVE
+    evaljob -->|"65 classification prompts"| SERVE
+    prom -.->|"scrape /metrics, node-exporter, DCGM"| SERVE
+    ecr -->|"images"| SERVE
+    s3 -->|"weights"| SERVE
+    loadgen & evaljob -->|"raw results"| s3
+    s3 --> report
+
+    classDef planned fill:#f7f0ff,stroke:#7a4fb5,stroke-dasharray: 5 3
+    class op,loadgen,evaljob,prom,v_arm,l_arm,v_x86,v_gpu planned

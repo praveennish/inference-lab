@@ -11,6 +11,12 @@ with Claude as the fallback. This repo measures whether a small open model
 compared with x86 CPU, GPU (if the quota allows) and Claude. The answer then feeds that agent's
 model router.
 
+**Start here:** [docs/design.md](docs/design.md): the architecture, components, a run step by step,
+the measurement method, every design choice with its rejected alternatives, and interview-style
+questions and answers. Diagrams in [docs/diagrams](docs/diagrams/).
+
+![Architecture](docs/diagrams/architecture.png)
+
 ## Status
 
 | Day | Work | State |

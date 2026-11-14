@@ -1,0 +1,61 @@
+flowchart TB
+    owner(["Owner · types 'yes' before any spend"])
+
+    subgraph CS["Codespace · trusted workstation"]
+        direction LR
+        make["make preflight · spike · baselines"]
+        tf["Terraform<br/>bootstrap + spike stacks"]
+        harness["bench/classify<br/>accuracy harness"]
+        results[("build/results/run/<br/>summary.md")]
+    end
+
+    subgraph AWS["AWS · Sydney region only"]
+        direction LR
+        subgraph LONG["Long-lived · cents per month"]
+            direction TB
+            state[("Terraform state<br/>S3 + lock file")]
+            boundary["Permissions boundary<br/>ceiling for every role"]
+            art[("Artifacts bucket<br/>bundle · weights · results")]
+            secret["Secrets Manager<br/>Anthropic key"]
+        end
+        subgraph NIGHT["Destroyed every night"]
+            direction TB
+            role["IAM role<br/>carries the boundary"]
+            sg["Security group<br/>no inbound ports"]
+            subgraph HOSTS["Spike hosts · default VPC · reached by SSM only"]
+                direction TB
+                grav["Graviton · c8g.2xlarge<br/>8 physical cores · arm64"]
+                x86["x86 · c7i.2xlarge<br/>4 cores × 2 threads"]
+                gpu["GPU · g6.xlarge · 1 × L4<br/>optional, GPU=1"]
+            end
+            eks["EKS control plane<br/>probe only, no nodes"]
+        end
+    end
+
+    subgraph NET["Public internet"]
+        direction TB
+        hf["Hugging Face · model weights"]
+        hub["Docker Hub · vLLM images"]
+        gh["GitHub · llama.cpp source"]
+        anth["Anthropic API · Claude"]
+    end
+
+    owner --> make
+    make --> tf
+    tf -->|"1 · apply after yes · 6 · destroy, always"| NIGHT
+    tf -->|"state"| state
+    tf -->|"2 · upload harness bundle"| art
+    HOSTS -->|"3 · pull weights, images, source"| NET
+    HOSTS -->|"4 · results after every step"| art
+    art -->|"5 · collect"| results
+    harness -->|"baselines"| anth
+    secret -.->|"key at run time"| harness
+    boundary -.-> role
+    role -.-> HOSTS
+
+    classDef long fill:#eef6ff,stroke:#4a78b5
+    classDef night fill:#fff4e5,stroke:#c77700
+    classDef ext fill:#f3f3f3,stroke:#888
+    class state,boundary,art,secret long
+    class role,sg,grav,x86,gpu,eks night
+    class hf,hub,gh,anth ext

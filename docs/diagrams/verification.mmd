@@ -1,0 +1,12 @@
+flowchart BT
+    L1["1 · Static checks<br/>ruff (security rules) · shellcheck · terraform fmt + validate<br/>seconds · catches syntax, unsafe patterns, e.g. HOME/PATH export bug"]
+    L2["2 · Unit tests with fake servers<br/>pytest · httpx MockTransport · real Anthropic SDK<br/>~1 s · proves request shape and parsing"]
+    L3["3 · Deploy path on an AWS emulator<br/>make test-aws-local · moto · real Makefile, preflight, Terraform, run_spike<br/>~5 min · 49 checks · caught the tab-vs-space preflight bug"]
+    L4["4 · Host script rehearsal<br/>make rehearse-spike / -gpu · real spike.sh, vLLM image, llama.cpp<br/>~7 min · 44 + 35 checks · caught 'aws s3 sync -q' (no results would reach S3)"]
+    L5["5 · Real AWS spike<br/>make spike · Free-plan limits, real quotas, arm64, KleidiAI, CUDA<br/>~1-2 h · ~$1-2.70 · the only source of real numbers"]
+    L1 --> L2 --> L3 --> L4 --> L5
+
+    classDef cheap fill:#eaf7ea,stroke:#3a8a3a
+    classDef costly fill:#fff4e5,stroke:#c77700
+    class L1,L2,L3,L4 cheap
+    class L5 costly

@@ -1,0 +1,59 @@
+flowchart TB
+    subgraph ENTRY["Entry point"]
+        mk["Makefile"]
+    end
+
+    subgraph SCRIPTS["scripts · orchestration"]
+        refresh["aws-refresh.sh<br/>credential_process profile"]
+        checks["account_checks.sh<br/>read-only account report"]
+        pre["preflight.sh<br/>gates before spend · exit 1 on FAIL"]
+        run["run_spike.sh<br/>plan → yes → apply → wait → collect → destroy"]
+        quota["gpu_quota.sh<br/>read / request G+VT quota"]
+    end
+
+    subgraph INFRA["infra · Terraform"]
+        boot["bootstrap/<br/>boundary · artifacts bucket"]
+        spk["spike/<br/>hosts · role · SG · EKS probe"]
+    end
+
+    subgraph HOST["images/spike · on each host"]
+        ud["user-data.sh.tftpl<br/>hard cap · fetch bundle · run · shut down"]
+        sh["spike.sh<br/>steps: sysinfo · gpu_info · download_model ·<br/>vllm_* · llama_* · write_summary"]
+    end
+
+    subgraph BENCH["bench/classify · harness"]
+        ds["dataset.py<br/>load + SHA-256 check · parse_signal"]
+        pr["prompt.py<br/>one frozen prompt · PROMPT_VERSION · parse_label"]
+        be["backends.py<br/>Backend protocol"]
+        rb["RulesBackend<br/>triage repo's classifier"]
+        ab["AnthropicBackend<br/>effort low · JSON-schema enum · no fallback"]
+        ob["OpenAICompatBackend<br/>temp 0 · seed · optional constrained choice"]
+        me["metrics.py<br/>accuracy · macro-F1 · confusion · invalid"]
+        rn["run.py<br/>predictions.jsonl · summary.json · summary.md"]
+    end
+
+    subgraph DATA["data/"]
+        jsonl[("classification.jsonl<br/>65 rows · copy, never edited")]
+    end
+
+    subgraph TESTS["Tests without AWS"]
+        unit["tests/ · pytest<br/>fake HTTP servers"]
+        emu["local_aws/test.sh<br/>moto emulator · 49 checks"]
+        reh["local_spike/rehearse.sh<br/>real spike.sh · tiny Qwen2 · 44 / 35 checks"]
+    end
+
+    mk --> refresh & checks & pre & run & quota & rn
+    run --> pre
+    run -->|terraform| spk
+    mk -->|terraform| boot
+    spk -->|renders| ud
+    ud --> sh
+    sh -->|python -m bench.classify.run openai| rn
+    rn --> be
+    be --> rb & ab & ob
+    rn --> ds & me
+    ab & ob --> pr
+    ds --> jsonl
+    unit -.-> be & me & pr
+    emu -.-> run & pre & spk
+    reh -.-> sh

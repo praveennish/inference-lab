@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    actor O as Owner
+    participant R as run_spike.sh (Codespace)
+    participant P as preflight.sh
+    participant T as Terraform
+    participant A as AWS (EC2, IAM, EKS)
+    participant H as EC2 host (user-data + spike.sh)
+    participant S3 as S3 artifacts bucket
+    participant V as vLLM / llama.cpp server (on host)
+
+    O->>R: make spike (GPU=1 optional)
+    R->>R: stamp commit into .bundle-commit
+    R->>P: run every gate
+    P-->>R: PASS table (or FAIL → exit, nothing created)
+    R->>T: plan (hosts, role, SG, EKS probe, bundle)
+    T-->>R: resources to create
+    R->>O: resources + estimated $/hour + worst case
+    O-->>R: "yes" (anything else → nothing applied)
+    Note over R: trap destroy EXIT is armed from here on
+    R->>T: apply
+    T->>S3: upload bundle.zip (harness + data + spike.sh)
+    T->>A: create role (with boundary), SG, instances, EKS probe
+    A->>H: boot with user-data
+    H->>H: shutdown -h +max_minutes (hard cap, terminate-on-shutdown)
+    H->>S3: download bundle.zip
+    loop each step (sysinfo, download_model, vllm_*, llama_*, ...)
+        H->>H: run step, record ok / failed / skipped in steps.tsv
+        H->>S3: sync results (failure noted in upload_errors.txt)
+    end
+    H->>V: start vLLM container, wait for /health (fail fast if it exits)
+    H->>V: smoke completion, 65 eval requests (free + constrained), vllm bench serve c=1, c=8
+    H->>V: stop vLLM. CPU hosts only: build llama.cpp (+KleidiAI on arm64), convert GGUF, llama-bench, llama-server evals
+    H->>S3: final sync (spike-summary.md, raw files)
+    H->>A: shutdown -h now → instance terminates
+    loop every 2 min until all hosts terminated or deadline
+        R->>A: describe instances
+        R->>S3: read each host's latest step
+    end
+    R->>S3: sync all results to build/results/spike-<run>/
+    R->>A: describe EKS probe status
+    R->>R: write summary.md: commit, apply result, EKS, preflight, per-host summaries
+    R->>T: destroy (always, via trap)
+    T->>A: delete instances, role, SG, EKS probe
+    R->>A: list anything still tagged project=inference-lab
+    R-->>O: "Paste back: build/results/spike-<run>/summary.md"
