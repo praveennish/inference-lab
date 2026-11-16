@@ -313,6 +313,92 @@ You know agents; here is the performance view:
 - **Tool time** (APIs, databases) sits between LLM calls; measure it separately or you blame the
   model for waiting on a tool.
 
+### 2.13 How CPU inference works, end to end
+
+**One sentence:** CPU inference runs the whole model on the server's normal processor: the weights
+live in ordinary RAM and the CPU cores do all the math, with no GPU.
+
+![CPU inference](guide/10-cpu-inference.png)
+
+#### The layers, top to bottom
+
+| Layer | Its job on a CPU |
+|---|---|
+| **vLLM (CPU backend)** | Takes requests, does continuous batching, keeps the paged KV cache in RAM (size set by `VLLM_CPU_KVCACHE_SPACE`) |
+| **PyTorch** | Runs the model's layers as tensor operations |
+| **oneDNN / CPU kernels** | Do the heavy work (matrix multiply, attention) with the best instructions the CPU has |
+| **OpenMP threads** | One thread per core; each thread takes a slice of every matrix |
+| **Cores** | **AMX** (matrix unit) when data is BF16 or INT8 and the kernel supports it; otherwise **AVX-512** |
+| **Caches → DRAM** | Weights and KV cache stream from memory for every token |
+
+The model and the API are the same as on a GPU. Only the bottom layers change.
+
+#### What happens for one new token
+
+The model is a stack of layers (28 for Qwen2.5-1.5B). For each new token, each layer does a few
+matrix multiplications:
+
+1. The matrix is **split across the cores**: each OpenMP thread gets a slice.
+2. Each core **streams its slice of the weights** from DRAM through L3, L2 and L1.
+3. The core multiplies with **AMX** tiles or **AVX-512** vectors.
+4. The slices are combined; the next layer starts. After the last layer, one token is chosen.
+
+**The key fact:** the weights (~3 GB for this model) are far bigger than the CPU's caches (tens to a
+few hundred MB), so **they come from DRAM again for every token**. That is why memory bandwidth
+decides decode speed on a CPU.
+
+#### Prefill and decode on a CPU
+
+| | Prefill (the prompt) | Decode (each new token) |
+|---|---|---|
+| Work | Many tokens at once: matrix × matrix | One token per user: vector × matrix |
+| Limited by | Compute | Memory bandwidth |
+| Xeon feature that helps | **AMX**, a matrix-multiply unit in every core; Intel's published figures: 1,024 BF16 or 2,048 INT8 operations per cycle per core | More memory channels, fewer bytes (quantization), more users per weight read (batching) |
+| User feels it as | TTFT | TPOT |
+
+**Batching is how a CPU catches up.** With 8 users decoding together, each weight read is used 8
+times, so decode turns back into matrix × matrix and AMX gets real work. That is why your
+rehearsal saw throughput rise 4.35× at 8 users (§4.3).
+
+#### Why choose a CPU at all
+
+| Strength | Why it matters |
+|---|---|
+| **Memory size** | Hundreds of GB of RAM: big KV caches, many users, large models fit |
+| **Already there** | Every data centre has Xeons; no GPU queue or special drivers |
+| **No copies** | Data stays in RAM; nothing moves to GPU memory |
+| **Cost for small models** | A 1–8B model at modest volume can cost less per token on CPU |
+| **Mixed work** | The same server runs the app, the database calls and the model |
+
+**Limits:** a GPU has far more compute and usually more memory bandwidth than a CPU instance gets, so
+large models, long prompts and high volume favour GPUs. The honest answer is always: "it depends on
+model size, batch and latency target, so measure cost per token at the latency target."
+
+#### What makes CPU numbers good or bad
+
+| Knob | Why | In your project |
+|---|---|---|
+| **Threads = physical cores** | Extra threads fight for bandwidth | vLLM used 3 of 4 CPUs; it keeps one for its own scheduler |
+| **Pinning (affinity)** | Threads that move between cores lose their cache | `VLLM_CPU_OMP_THREADS_BIND` recorded |
+| **NUMA locality** | Memory on the other socket is slower (it travels over UPI) | vLLM logged a NUMA memory-bind to node 0 |
+| **Hyper-threading** | The second thread often adds little in decode | Why you compare per physical core |
+| **dtype BF16 or INT8** | Lets AMX run; FP32 does not | BF16 everywhere |
+| **Check AMX is really used** | A wrong build or dtype silently falls back to AVX-512 | `ONEDNN_VERBOSE=1`, look for `amx` (next step) |
+| **KV cache size** | Too small → users wait; default → too much RAM | Default wanted ~13–14 GiB; sized to 4 GiB from the formula |
+| **Shared memory** | vLLM's processes share data through `/dev/shm` | 160 MiB needed vs Docker's 64 MiB |
+| **Huge pages, allocator** | Fewer TLB misses; less `malloc` overhead | On the BKC list (§3.4) |
+| **Quantization** | Fewer bytes per token → faster decode | llama.cpp Q8_0 / Q4 formats |
+
+#### How to say it
+
+> "On CPU, the weights sit in DRAM and every decode step streams them through the caches, so
+> single-user decode is limited by memory bandwidth per socket. Prefill and batched decode are
+> matrix-heavy, and that's where AMX earns its keep. So the CPU playbook is: keep memory local with
+> NUMA binding and threads pinned to physical cores, make sure AMX is actually used with BF16 or
+> INT8, batch enough users to turn decode into matrix work, quantize to cut bytes per token, and
+> judge it all by cost per token at the latency target. Top-down tells me which one is the
+> bottleneck: Memory Bound means bytes; Core Bound or low Retiring means the kernels."
+
 ---
 
 ## 3. Finding the "why": server hardware, Linux and the tools
@@ -736,6 +822,18 @@ Attainable performance = the lower of peak compute and bandwidth × arithmetic i
 intensity kernels (batch-1 decode) sit under the memory roof; high-intensity (prefill, big batches)
 under the compute roof. Batching and quantization move decode to the right.
 
+**Q: Walk me through how an LLM runs on a CPU.**
+vLLM batches requests and keeps a paged KV cache in RAM; PyTorch runs the layers; oneDNN kernels do
+the matrix work; OpenMP threads, one per core, each take a slice of every matrix. For every new
+token the weights stream from DRAM through the caches, so single-user decode is bandwidth-bound.
+Prefill and batched decode are matrix × matrix, which is where AMX helps. Tuning: threads on
+physical cores, NUMA-local memory, AMX verified, enough batching, quantization. (§2.13)
+
+**Q: When would you pick a CPU over a GPU for inference?**
+Small models (1–8B), modest or bursty volume, latency targets a CPU can meet, very large memory
+needs, or where GPUs are scarce. I'd decide on cost per million tokens at the latency target,
+measured on both.
+
 **Q: What's AMX and when does it help?**
 Advanced Matrix Extensions on 4th Gen Xeon and later: tile registers plus a matrix-multiply unit
 for BF16 and INT8 (FP16 on Xeon 6). It helps matrix × matrix work: prefill and batched decode. It
@@ -843,6 +941,8 @@ QUANT           fewer bytes per weight; INT4 weight-only → decode; INT8 W+A �
 AMX             BF16 + INT8 matrix unit (FP16 on Xeon 6) → prefill, batched decode
 TOP-DOWN        Retiring | Bad spec | Frontend | Backend(Memory | Core); decode → Memory
 ROOFLINE        perf = min(peak, BW × FLOP/byte); batching & quant move decode right
+CPU INFERENCE   weights in DRAM, streamed every token; threads split each matrix across cores;
+                AMX for BF16/INT8 matrix work (prefill, batched decode); batching = catch-up
 KNOBS           threads, pinning, numactl, 1 instance/socket, huge pages, tcmalloc, shm
 TOOLS           perf/VTune hotspots · TMA/toplev · PCM/MLC bandwidth · ONEDNN_VERBOSE (AMX?)
                 Advisor roofline · ftrace/eBPF (runqlat, offcpu) · vLLM /metrics, bench serve

@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph SW["Software stack"]
+        direction TB
+        s1["HTTP request"]
+        s2["vLLM CPU backend<br/>scheduler · continuous batching<br/>paged KV cache in RAM"]
+        s3["PyTorch<br/>model layers as tensor ops"]
+        s4["oneDNN / CPU kernels<br/>matrix multiply · attention"]
+        s5["OpenMP threads<br/>one per physical core"]
+        s1 --> s2 --> s3 --> s4 --> s5
+    end
+    subgraph HW["One decode step"]
+        direction TB
+        h1["DRAM<br/>weights ~3 GB + KV cache<br/>too big for any cache"]
+        h2["L3 → L2 → L1<br/>weights stream through"]
+        h3["Each core gets a slice<br/>of every matrix"]
+        h4["AMX tiles (BF16 / INT8)<br/>or AVX-512 if AMX not used"]
+        h5["Results combined →<br/>next layer, 28 layers per token"]
+        h1 --> h2 --> h3 --> h4 --> h5
+    end
+    s5 --> h3
+    h5 -.->|"repeat for every new token"| h1
+
+    classDef mem fill:#fff0f0,stroke:#b53a3a
+    classDef cmp fill:#eaf2ff,stroke:#3a68b5
+    class h1,h2 mem
+    class h3,h4,h5 cmp
