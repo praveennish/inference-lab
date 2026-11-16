@@ -1,0 +1,23 @@
+flowchart TB
+    L1["Agent layer · LangGraph, CrewAI, MCP tools<br/>many LLM calls, long shared prompts"]
+    L2["Serving engine · vLLM, SGLang, TGI, OpenVINO<br/>scheduler, batching, KV cache, quantization"]
+    L3["Framework + kernels · PyTorch, oneDNN, IPEX<br/>attention, GEMM, AMX / AVX-512 kernels"]
+    L4["Linux · threads, affinity, NUMA, huge pages, cgroups"]
+    L5["Server hardware · cores, caches, memory channels,<br/>sockets / UPI, AMX units"]
+    L1 --> L2 --> L3 --> L4 --> L5
+
+    T1["Tools: request traces, per-call timings,<br/>tokens per call, cache hit rate"]
+    T2["Tools: engine /metrics, vllm bench serve,<br/>TTFT / TPOT / throughput, KV cache usage"]
+    T3["Tools: PyTorch profiler, VTune Hotspots,<br/>ONEDNN_VERBOSE (is AMX used?)"]
+    T4["Tools: perf, ftrace, eBPF (bpftrace),<br/>numastat, taskset, numactl"]
+    T5["Tools: VTune Microarchitecture + Memory Access,<br/>EMON / PMU counters, top-down, roofline"]
+    L1 -.- T1
+    L2 -.- T2
+    L3 -.- T3
+    L4 -.- T4
+    L5 -.- T5
+
+    classDef layer fill:#eaf2ff,stroke:#3a68b5
+    classDef tool fill:#f3f3f3,stroke:#888
+    class L1,L2,L3,L4,L5 layer
+    class T1,T2,T3,T4,T5 tool

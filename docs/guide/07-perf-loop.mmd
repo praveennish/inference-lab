@@ -1,0 +1,8 @@
+flowchart LR
+    A["1 · Measure<br/>fair, repeatable baseline<br/>KPIs + spread"] --> B["2 · Ask WHY<br/>which layer? which resource?"]
+    B --> C["3 · Profile<br/>top-down, VTune, perf,<br/>engine metrics"]
+    C --> D["4 · Hypothesis<br/>'decode is DRAM-bandwidth bound'"]
+    D --> E["5 · One change<br/>e.g. INT8 weights, NUMA bind,<br/>bigger batch, AMX kernel"]
+    E --> F["6 · Re-measure<br/>same method, same KPIs"]
+    F -->|"explain the delta<br/>with counters"| G["7 · Ship it<br/>code change, upstream PR,<br/>BKC, customer guide"]
+    F -->|"no gain? wrong hypothesis"| B

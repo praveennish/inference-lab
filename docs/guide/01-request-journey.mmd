@@ -1,0 +1,14 @@
+flowchart LR
+    A["Agent or app<br/>sends a prompt"] --> B["Serving engine<br/>(vLLM, SGLang, TGI)<br/>queues + batches requests"]
+    B --> C["Tokenizer<br/>text → token IDs"]
+    C --> D["PREFILL<br/>read the whole prompt at once<br/>build the KV cache"]
+    D --> E["DECODE loop<br/>1 new token per step<br/>reuse + grow the KV cache"]
+    E -->|"until stop word<br/>or max tokens"| E
+    E --> F["Detokenizer<br/>token IDs → text"]
+    F --> G["Answer streamed back"]
+
+    D -.->|"time to first token (TTFT)"| G
+    E -.->|"time per output token (TPOT)"| G
+
+    classDef hot fill:#fff4e5,stroke:#c77700
+    class D,E hot

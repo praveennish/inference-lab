@@ -1,0 +1,15 @@
+flowchart TB
+    root["Every CPU pipeline slot goes into exactly one bucket"]
+    root --> R["RETIRING<br/>useful work done<br/>(high = good, then use better<br/>instructions e.g. AMX)"]
+    root --> BS["BAD SPECULATION<br/>branch mispredicts,<br/>work thrown away"]
+    root --> FE["FRONTEND BOUND<br/>CPU starved of instructions<br/>(i-cache, big Python/C++ code)"]
+    root --> BE["BACKEND BOUND<br/>instructions waiting to run"]
+    BE --> MEM["MEMORY BOUND<br/>waiting for data<br/>L1 → L2 → LLC → DRAM"]
+    BE --> CORE["CORE BOUND<br/>execution units busy<br/>or dependency chains"]
+    MEM --> dec["LLM DECODE usually lands here:<br/>weights + KV cache streamed from DRAM"]
+    CORE --> pre["LLM PREFILL with good kernels<br/>moves toward here / Retiring"]
+
+    classDef bad fill:#fff0f0,stroke:#b53a3a
+    classDef good fill:#eaf7ea,stroke:#3a8a3a
+    class MEM,dec bad
+    class R,pre good

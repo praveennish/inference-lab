@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph CAS["Cassandra (done)"]
+        direction TB
+        c1["Bottleneck: compression CPU<br/>+ bytes written in compaction"]
+        c2["Fix: zstd (fewer bytes)<br/>QAT (offload the work)"]
+        c3["Load tool: NoSQLBench<br/>realistic, rate-controlled"]
+        c4["KPIs: ops/s, p99,<br/>CPU %, compaction rate"]
+        c5["Why: CPU freed from the hot path,<br/>less I/O per write"]
+    end
+    subgraph LLM["LLM inference (same thinking)"]
+        direction TB
+        l1["Bottleneck: memory bandwidth<br/>in decode"]
+        l2["Fix: quantization INT8/INT4 (fewer bytes)<br/>AMX (special unit does the math)"]
+        l3["Load tool: vllm bench serve<br/>realistic, rate-controlled"]
+        l4["KPIs: TTFT, TPOT, tokens/s,<br/>p99, cost per 1M tokens"]
+        l5["Why: fewer bytes per token,<br/>more math per byte read"]
+    end
+    c1 -.-> l1
+    c2 -.-> l2
+    c3 -.-> l3
+    c4 -.-> l4
+    c5 -.-> l5

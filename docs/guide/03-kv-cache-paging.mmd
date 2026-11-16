@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph OLD["Without paging"]
+        direction TB
+        o1["User A: reserved 4096 slots<br/>uses 300"]
+        o2["User B: reserved 4096 slots<br/>uses 900"]
+        o3["Memory full → new users wait<br/>most of it is empty"]
+        o1 --> o2 --> o3
+    end
+    subgraph NEW["PagedAttention"]
+        direction TB
+        n1["User A: 3 blocks"]
+        n2["User B: 8 blocks"]
+        n3["Block table maps each user's<br/>token positions → physical blocks"]
+        n4["Shared system prompt?<br/>share its blocks (prefix caching)"]
+        n1 --> n3
+        n2 --> n3
+        n3 --> n4
+    end
+    OLD -->|"same memory,<br/>many more users fit"| NEW

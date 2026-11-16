@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph P["PREFILL"]
+        direction TB
+        p1["Big matrix × big matrix<br/>(many tokens × weights)"]
+        p2["Lots of math per byte of weights read"]
+        p3["Limit: COMPUTE<br/>(AMX, AVX-512, tensor cores)"]
+        p4["Sets TTFT"]
+        p1 --> p2 --> p3 --> p4
+    end
+    subgraph D["DECODE"]
+        direction TB
+        d1["Small vector × big matrix<br/>(1 token × all weights)"]
+        d2["Must read ALL weights for every token<br/>very little math per byte"]
+        d3["Limit: MEMORY BANDWIDTH<br/>(DRAM channels, caches)"]
+        d4["Sets TPOT"]
+        d1 --> d2 --> d3 --> d4
+    end
+    fix["Batching: one read of the weights<br/>serves many users' tokens<br/>→ decode becomes more compute-heavy"]
+    D --> fix
+
+    classDef c fill:#eaf2ff,stroke:#3a68b5
+    classDef m fill:#fff0f0,stroke:#b53a3a
+    class p1,p2,p3,p4 c
+    class d1,d2,d3,d4 m

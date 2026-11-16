@@ -11,6 +11,9 @@ with Claude as the fallback. This repo measures whether a small open model
 compared with x86 CPU, GPU (if the quota allows) and Claude. The answer then feeds that agent's
 model router.
 
+**Interview prep, from scratch:** [docs/interview-guide.md](docs/interview-guide.md): LLM inference
+concepts, the hardware and tools to find the "why", and this project mapped to the role.
+
 **Start here:** [docs/design.md](docs/design.md): the architecture, components, a run step by step,
 the measurement method, every design choice with its rejected alternatives, and interview-style
 questions and answers. Diagrams in [docs/diagrams](docs/diagrams/).

@@ -1,0 +1,12 @@
+flowchart TB
+    subgraph S["Static batching"]
+        direction LR
+        s1["Batch of 4 starts together"] --> s2["Short answers finish early<br/>their slots sit idle"] --> s3["Next batch starts only when<br/>the LONGEST answer is done"]
+    end
+    subgraph C["Continuous batching"]
+        direction LR
+        c1["Each decode step:<br/>finished requests leave"] --> c2["Waiting requests join<br/>immediately"] --> c3["Hardware stays busy<br/>throughput up"]
+    end
+    S -->|"replaced by"| C
+    t["Trade-off you must show:<br/>more users at once → more tokens/s in total<br/>BUT each user waits a bit longer per token"]
+    C --> t

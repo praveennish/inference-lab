@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph LOAD["NoSQLBench"]
+        nb["Realistic workload YAML<br/>reads + writes, data shape,<br/>fixed rate (cyclerate)<br/>HDR latency histograms"]
+    end
+    subgraph DB["Cassandra"]
+        direction TB
+        w["Writes → memtable → flush to SSTables"]
+        comp["COMPACTION<br/>merge SSTables, rewrite them"]
+        codec{"Compression codec<br/>on the rewrite path"}
+        lz4["Baseline codec<br/>CPU on the hot path"]
+        zstd["zstd<br/>better ratio, more CPU"]
+        qat["zstd/deflate on QAT<br/>compression offloaded<br/>to the accelerator"]
+        w --> comp --> codec
+        codec --> lz4
+        codec --> zstd
+        codec --> qat
+    end
+    subgraph KPI["KPIs"]
+        k["ops/s · p50 / p99 latency<br/>compaction MB/s · pending compactions<br/>CPU % · bytes on disk · ratio"]
+    end
+    nb --> w
+    DB --> k
