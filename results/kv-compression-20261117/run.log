@@ -1,0 +1,20 @@
+[transformers] Loading a GGUF checkpoint with its weights packed is fastest in float32, and this one was asked for in torch.bfloat16. The kernels compute in float32, so every matmul will cast its input and its output. Pass `dtype=torch.float32` to avoid it -- the weights stay quantized regardless, so this costs no extra memory.
+loaded in 36s: layers=28 kv_heads=2 head_dim=128 KV bytes/token=28672 (28 KiB)
+workload A: 65 requests, 15533 tokens (min 227, max 251) in 32s
+workload B: 1 transcript, 3098 tokens in 5s
+done A_requests
+done B_transcript
+{
+ "model": "Qwen2.5-1.5B-Instruct (GGUF F16 -> BF16)",
+ "kv_bytes_per_token": 28672,
+ "block_tokens": 16,
+ "workload_A_tokens": 15533,
+ "workload_B_tokens": 3098,
+ "cpu": "\t: Intel(R) Xeon(R) Processor @ 2.10GHz",
+ "threads_for_codecs": 1,
+ "A_requests": {
+  "entropy_bits_per_byte": {
+   "high_bytes_sign_exponent": 2.96,
+   "low_bytes_mantissa": 7.97
+  },
+  "bf16_raw_per_block": {

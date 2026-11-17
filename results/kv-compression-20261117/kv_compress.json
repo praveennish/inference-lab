@@ -1,0 +1,357 @@
+{
+  "model": "Qwen2.5-1.5B-Instruct (GGUF F16 -> BF16)",
+  "kv_bytes_per_token": 28672,
+  "block_tokens": 16,
+  "workload_A_tokens": 15533,
+  "workload_B_tokens": 3098,
+  "cpu": "\t: Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "threads_for_codecs": 1,
+  "A_requests": {
+    "entropy_bits_per_byte": {
+      "high_bytes_sign_exponent": 2.96,
+      "low_bytes_mantissa": 7.97
+    },
+    "bf16_raw_per_block": {
+      "bytes": 445362176,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.231,
+          "space_saved_pct": 18.8,
+          "compress_MBps_1core": 29.7,
+          "decompress_MBps_1core": 161.1
+        },
+        "deflate-6": {
+          "ratio": 1.244,
+          "space_saved_pct": 19.6,
+          "compress_MBps_1core": 11.9,
+          "decompress_MBps_1core": 189.6
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": 0.0,
+          "compress_MBps_1core": 2236.4,
+          "decompress_MBps_1core": 3152.6
+        },
+        "zstd-1": {
+          "ratio": 1.261,
+          "space_saved_pct": 20.7,
+          "compress_MBps_1core": 907.9,
+          "decompress_MBps_1core": 832.3
+        },
+        "zstd-3": {
+          "ratio": 1.262,
+          "space_saved_pct": 20.8,
+          "compress_MBps_1core": 791.2,
+          "decompress_MBps_1core": 833.4
+        },
+        "zstd-9": {
+          "ratio": 1.261,
+          "space_saved_pct": 20.7,
+          "compress_MBps_1core": 553.2,
+          "decompress_MBps_1core": 832.1
+        }
+      }
+    },
+    "bf16_byteplanes_per_block": {
+      "bytes": 445362176,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.364,
+          "space_saved_pct": 26.7,
+          "compress_MBps_1core": 53.9,
+          "decompress_MBps_1core": 337.1
+        },
+        "deflate-6": {
+          "ratio": 1.394,
+          "space_saved_pct": 28.2,
+          "compress_MBps_1core": 8.9,
+          "decompress_MBps_1core": 335.6
+        },
+        "lz4": {
+          "ratio": 1.158,
+          "space_saved_pct": 13.7,
+          "compress_MBps_1core": 535.3,
+          "decompress_MBps_1core": 2597.8
+        },
+        "zstd-1": {
+          "ratio": 1.443,
+          "space_saved_pct": 30.7,
+          "compress_MBps_1core": 494.9,
+          "decompress_MBps_1core": 1573.6
+        },
+        "zstd-3": {
+          "ratio": 1.397,
+          "space_saved_pct": 28.4,
+          "compress_MBps_1core": 239.4,
+          "decompress_MBps_1core": 1294.9
+        },
+        "zstd-9": {
+          "ratio": 1.414,
+          "space_saved_pct": 29.3,
+          "compress_MBps_1core": 73.1,
+          "decompress_MBps_1core": 1450.3
+        }
+      }
+    },
+    "bf16_raw_whole_request": {
+      "bytes": 445362176,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.232,
+          "space_saved_pct": 18.8,
+          "compress_MBps_1core": 29.2,
+          "decompress_MBps_1core": 170.8
+        },
+        "deflate-6": {
+          "ratio": 1.245,
+          "space_saved_pct": 19.6,
+          "compress_MBps_1core": 11.6,
+          "decompress_MBps_1core": 184.3
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": 0.0,
+          "compress_MBps_1core": 1769.9,
+          "decompress_MBps_1core": 2676.4
+        },
+        "zstd-1": {
+          "ratio": 1.262,
+          "space_saved_pct": 20.7,
+          "compress_MBps_1core": 863.7,
+          "decompress_MBps_1core": 836.4
+        },
+        "zstd-3": {
+          "ratio": 1.264,
+          "space_saved_pct": 20.9,
+          "compress_MBps_1core": 590.5,
+          "decompress_MBps_1core": 828.9
+        },
+        "zstd-9": {
+          "ratio": 1.276,
+          "space_saved_pct": 21.7,
+          "compress_MBps_1core": 66.4,
+          "decompress_MBps_1core": 593.3
+        }
+      }
+    },
+    "fp8_e4m3_per_block": {
+      "bytes": 222681088,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.165,
+          "space_saved_pct": 14.1,
+          "compress_MBps_1core": 36.1,
+          "decompress_MBps_1core": 181.3
+        },
+        "deflate-6": {
+          "ratio": 1.176,
+          "space_saved_pct": 15.0,
+          "compress_MBps_1core": 32.8,
+          "decompress_MBps_1core": 204.8
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": -0.0,
+          "compress_MBps_1core": 2104.9,
+          "decompress_MBps_1core": 4146.3
+        },
+        "zstd-1": {
+          "ratio": 1.175,
+          "space_saved_pct": 14.9,
+          "compress_MBps_1core": 846.0,
+          "decompress_MBps_1core": 791.3
+        },
+        "zstd-3": {
+          "ratio": 1.175,
+          "space_saved_pct": 14.9,
+          "compress_MBps_1core": 718.4,
+          "decompress_MBps_1core": 784.0
+        },
+        "zstd-9": {
+          "ratio": 1.175,
+          "space_saved_pct": 14.9,
+          "compress_MBps_1core": 335.8,
+          "decompress_MBps_1core": 753.7
+        }
+      }
+    },
+    "zstd3_byteplanes_K_vs_V_ratio": {
+      "K": 1.391,
+      "V": 1.403
+    }
+  },
+  "B_transcript": {
+    "entropy_bits_per_byte": {
+      "high_bytes_sign_exponent": 2.98,
+      "low_bytes_mantissa": 7.96
+    },
+    "bf16_raw_per_block": {
+      "bytes": 88825856,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.232,
+          "space_saved_pct": 18.8,
+          "compress_MBps_1core": 29.1,
+          "decompress_MBps_1core": 161.3
+        },
+        "deflate-6": {
+          "ratio": 1.245,
+          "space_saved_pct": 19.7,
+          "compress_MBps_1core": 12.1,
+          "decompress_MBps_1core": 183.9
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": 0.0,
+          "compress_MBps_1core": 2145.7,
+          "decompress_MBps_1core": 4104.8
+        },
+        "zstd-1": {
+          "ratio": 1.262,
+          "space_saved_pct": 20.8,
+          "compress_MBps_1core": 886.4,
+          "decompress_MBps_1core": 806.1
+        },
+        "zstd-3": {
+          "ratio": 1.264,
+          "space_saved_pct": 20.9,
+          "compress_MBps_1core": 754.8,
+          "decompress_MBps_1core": 800.8
+        },
+        "zstd-9": {
+          "ratio": 1.262,
+          "space_saved_pct": 20.7,
+          "compress_MBps_1core": 492.9,
+          "decompress_MBps_1core": 797.0
+        }
+      }
+    },
+    "bf16_byteplanes_per_block": {
+      "bytes": 88825856,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.364,
+          "space_saved_pct": 26.7,
+          "compress_MBps_1core": 52.1,
+          "decompress_MBps_1core": 290.8
+        },
+        "deflate-6": {
+          "ratio": 1.395,
+          "space_saved_pct": 28.3,
+          "compress_MBps_1core": 8.6,
+          "decompress_MBps_1core": 301.5
+        },
+        "lz4": {
+          "ratio": 1.158,
+          "space_saved_pct": 13.6,
+          "compress_MBps_1core": 571.6,
+          "decompress_MBps_1core": 2641.8
+        },
+        "zstd-1": {
+          "ratio": 1.446,
+          "space_saved_pct": 30.8,
+          "compress_MBps_1core": 518.7,
+          "decompress_MBps_1core": 1631.4
+        },
+        "zstd-3": {
+          "ratio": 1.399,
+          "space_saved_pct": 28.5,
+          "compress_MBps_1core": 254.7,
+          "decompress_MBps_1core": 1316.6
+        },
+        "zstd-9": {
+          "ratio": 1.416,
+          "space_saved_pct": 29.4,
+          "compress_MBps_1core": 74.7,
+          "decompress_MBps_1core": 1426.2
+        }
+      }
+    },
+    "bf16_raw_whole_request": {
+      "bytes": 88825856,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.233,
+          "space_saved_pct": 18.9,
+          "compress_MBps_1core": 29.1,
+          "decompress_MBps_1core": 163.4
+        },
+        "deflate-6": {
+          "ratio": 1.245,
+          "space_saved_pct": 19.7,
+          "compress_MBps_1core": 11.8,
+          "decompress_MBps_1core": 178.0
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": 0.0,
+          "compress_MBps_1core": 1754.3,
+          "decompress_MBps_1core": 2539.0
+        },
+        "zstd-1": {
+          "ratio": 1.265,
+          "space_saved_pct": 20.9,
+          "compress_MBps_1core": 846.5,
+          "decompress_MBps_1core": 835.6
+        },
+        "zstd-3": {
+          "ratio": 1.272,
+          "space_saved_pct": 21.4,
+          "compress_MBps_1core": 471.0,
+          "decompress_MBps_1core": 767.7
+        },
+        "zstd-9": {
+          "ratio": 1.294,
+          "space_saved_pct": 22.7,
+          "compress_MBps_1core": 52.3,
+          "decompress_MBps_1core": 455.7
+        }
+      }
+    },
+    "fp8_e4m3_per_block": {
+      "bytes": 44412928,
+      "codecs": {
+        "deflate-1": {
+          "ratio": 1.165,
+          "space_saved_pct": 14.1,
+          "compress_MBps_1core": 36.8,
+          "decompress_MBps_1core": 184.6
+        },
+        "deflate-6": {
+          "ratio": 1.176,
+          "space_saved_pct": 15.0,
+          "compress_MBps_1core": 33.3,
+          "decompress_MBps_1core": 204.4
+        },
+        "lz4": {
+          "ratio": 1.0,
+          "space_saved_pct": 0.0,
+          "compress_MBps_1core": 2180.5,
+          "decompress_MBps_1core": 4562.2
+        },
+        "zstd-1": {
+          "ratio": 1.174,
+          "space_saved_pct": 14.8,
+          "compress_MBps_1core": 889.8,
+          "decompress_MBps_1core": 794.2
+        },
+        "zstd-3": {
+          "ratio": 1.176,
+          "space_saved_pct": 15.0,
+          "compress_MBps_1core": 748.5,
+          "decompress_MBps_1core": 790.9
+        },
+        "zstd-9": {
+          "ratio": 1.176,
+          "space_saved_pct": 15.0,
+          "compress_MBps_1core": 347.5,
+          "decompress_MBps_1core": 777.0
+        }
+      }
+    },
+    "zstd3_byteplanes_K_vs_V_ratio": {
+      "K": 1.398,
+      "V": 1.435
+    }
+  }
+}
