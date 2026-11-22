@@ -2,6 +2,9 @@
 
 Instructions for Claude Code working in this repository.
 
+**Start every session by reading `docs/PROGRESS.md`** (status, measured facts, next steps, how the
+owner works) and update it before the session ends.
+
 ## What this project is
 
 One question, measured: **which hardware and runtime should serve the cheap, high-volume step of
