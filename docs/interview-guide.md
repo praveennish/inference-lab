@@ -24,25 +24,27 @@ raw file behind them. Numbers marked *arithmetic* are worked out from formulas. 
 2. [LLM inference from scratch](#2-llm-inference-from-scratch)
 3. [Finding the "why": server hardware, Linux and the tools](#3-finding-the-why-server-hardware-linux-and-the-tools)
 4. [Your proof: what you built and what it shows](#4-your-proof-what-you-built-and-what-it-shows)
-5. [Your model answer: the Cassandra compression story](#5-your-model-answer-the-cassandra-compression-story)
-6. [Questions you will be asked, with answers](#6-questions-you-will-be-asked-with-answers)
-7. [What to claim, what not to claim, what to ask them](#7-what-to-claim-what-not-to-claim-what-to-ask-them)
-8. [One-page cheat sheet](#8-one-page-cheat-sheet)
+5. [The product: Intel Agent Toolkit, and where your work fits](#5-the-product-intel-agent-toolkit-and-where-your-work-fits)
+6. [Your model answer: the Cassandra compression story](#6-your-model-answer-the-cassandra-compression-story)
+7. [Questions you will be asked, with answers](#7-questions-you-will-be-asked-with-answers)
+8. [What to claim, what not to claim, what to ask them](#8-what-to-claim-what-not-to-claim-what-to-ask-them)
+9. [One-page cheat sheet](#9-one-page-cheat-sheet)
 
 ---
 
 ## 0. Tonight's plan and your 60-second pitch
 
-### 0.1 Reading plan (about 5 hours)
+### 0.1 Reading plan (about 6 hours)
 
 | Time | Read | Goal |
 |---|---|---|
 | 1 h | §2 LLM inference from scratch | Explain prefill, decode, KV cache, batching, quantization with no notes |
 | 1 h | §3 Hardware, Linux, tools | Explain top-down, roofline, NUMA, and which tool answers which question |
 | 45 min | §4 Your proof | Know each real finding: the number, and **why** it happened |
-| 45 min | §5 Cassandra story | **Fill in your real numbers**, rehearse it out loud twice |
-| 1 h | §6 Questions | Answer each out loud in under 90 seconds |
-| 15 min | §8 Cheat sheet | Last look in the morning |
+| 45 min | §5 Intel Agent Toolkit | Talk about their product in their words; know the gap you would fill |
+| 45 min | §6 Cassandra story | **Fill in your real numbers**, rehearse it out loud twice |
+| 1 h | §7 Questions | Answer each out loud in under 90 seconds |
+| 15 min | §9 Cheat sheet | Last look in the morning |
 
 ### 0.2 Your 60-second pitch
 
@@ -60,16 +62,22 @@ raw file behind them. Numbers marked *arithmetic* are worked out from formulas. 
 > for real, and every finding comes with a reason, like vLLM's CPU backend keeping one core for
 > itself, or why batching gave four times the throughput but not eight.
 >
+> I've also studied your Agent Toolkit closely. Its CPU settings match what I measured, like the
+> core vLLM reserves for itself, and its docs list missing inference numbers as the first gap. That
+> is exactly the work I'd start with.
+>
 > This role is exactly that loop: measure fairly, find why, change something, and turn it into
 > guidance others can use."
 
 ### 0.3 The three stories to have ready
 
-1. **Cassandra zstd + QAT in compaction** (§5): your strongest "bottleneck → fix → measured →
+1. **Cassandra zstd + QAT in compaction** (§6): your strongest "bottleneck → fix → measured →
    why" story.
 2. **Batching on vLLM CPU** (§4.3, finding 1): "throughput rose 4.35×, not 8×; here is why."
 3. **Benchmark infrastructure at scale** (Workload Services Framework): how you made results
    repeatable and trusted across platforms.
+4. **Their product's gap** (§5.5): the Agent Toolkit publishes no inference numbers; here is the
+   report you'd build, and why WSF-style harnesses are the way to keep it current.
 
 ---
 
@@ -84,6 +92,9 @@ best-known configurations (BKCs).
 The JD says it directly: *"Benchmarking tells us what the number is. Your job is to understand why
 the number is what it is."* Every answer you give should end with a **why**.
 
+**The product:** the team is "AI Solutions and Toolkit Engineering", and Intel's open-source Agent
+Toolkit runs agent stacks on Xeon. It is very likely what you would work on. §5 covers it.
+
 ### 1.2 Skill map: every JD line, your level, and where to prepare
 
 **Levels:** **Strong** = you have done it, tell a story. **Bridge** = your experience transfers;
@@ -92,18 +103,18 @@ learn the AI words tonight. **New** = learn the concept; be honest that it is ne
 | JD requirement (mandatory) | Your level | Your evidence | Read |
 |---|---|---|---|
 | 10+ years, performance engineering on server platforms | **Strong** | 12 years Intel; Xeon validation; WSF | §4.5 |
-| Identify complex bottlenecks, deliver measurable gains | **Strong** | QAT Java library (23% throughput, from your resume), Cassandra zstd/QAT, JVM lock contention | §5 |
-| Python and C++ | Python **Strong**; C++ **Bridge** | Python: inference-lab, triage agent. Java expert; native code via QAT/JNI **[confirm what C/C++ you wrote]** | §7 |
+| Identify complex bottlenecks, deliver measurable gains | **Strong** | QAT Java library (23% throughput, from your resume), Cassandra zstd/QAT, JVM lock contention | §6 |
+| Python and C++ | Python **Strong**; C++ **Bridge** | Python: inference-lab, triage agent. Java expert; native code via QAT/JNI **[confirm what C/C++ you wrote]** | §8 |
 | Server architecture: caches, memory bandwidth, NUMA, interconnects | **Strong / Bridge** | Xeon validation work; §3.1 refreshes the details | §3.1 |
 | Linux: affinity, huge pages, cgroups, eBPF, ftrace, perf | **Strong / Bridge** | perf, VTune, flame graphs; this project hit affinity, shared memory, file limits, cgroups-like container limits | §3.4, §4.3 |
 
 | JD requirement (preferred) | Your level | Your evidence | Read |
 |---|---|---|---|
 | LLM inference: KV cache, paged attention, continuous batching, quantization | **New → Bridge** | You sized a KV cache from the model, measured batching, ran quantized GGUF | §2 |
-| Modify or optimize vLLM, SGLang, TGI, OpenVINO | **Bridge** | Ran vLLM CPU for real, tuned its settings, found its core reservation and memory defaults | §4.3 |
-| Agentic AI: LangGraph, CrewAI, AutoGen, MCP | **Strong** | pipeline-triage-agent: MCP tools, Claude, bounded agent loop, rules-first routing | §4.4 |
+| Modify or optimize vLLM, SGLang, TGI, OpenVINO | **Bridge** | Ran vLLM CPU for real, tuned its settings, found its core reservation and memory defaults; mapped them to the toolkit's `models.yaml` | §4.3, §5.3 |
+| Agentic AI: LangGraph, CrewAI, AutoGen, MCP | **Strong** | pipeline-triage-agent: MCP tools, Claude, bounded agent loop, rules-first routing; studied Intel's Agent Toolkit end to end | §4.4, §5 |
 | Hardware counters: VTune, EMON/PMU, perf, top-down, roofline | **Strong (general) / Bridge (for LLMs)** | You used VTune and perf for Java and storage; §3 maps them onto LLM inference | §3.2, §3.3 |
-| Open-source contributions | **[fill in]** | Lucene / OpenSearch zstd codec work, if upstreamed **[confirm]** | §7 |
+| Open-source contributions | **[fill in]** | Lucene / OpenSearch zstd codec work, if upstreamed **[confirm]** | §8 |
 | Explain across layers (silicon ↔ software) | **Strong** | WSF sat between silicon validation and software teams | §4.5 |
 
 ---
@@ -638,6 +649,16 @@ or just badly formatted.
 software events only." **Lesson:** counter-level analysis (top-down, EMON) needs bare metal or an
 instance that exposes the PMU; plan for it.
 
+**Finding 9: the KV cache barely compresses, and the reason is the number format.** *Measured* on
+the **real Qwen2.5-1.5B-Instruct** (65 classification requests plus one agent transcript, BF16 KV
+cache, single run): 28 KiB of KV cache per token. Best lossless result: zstd on split byte planes,
+**1.44×** (31% smaller). Raw BF16 with zstd: 1.26×. **LZ4: 1.00×**, no gain at all. **Why:** each
+BF16 number has a predictable exponent byte (2.96 bits of entropy) and a near-random mantissa byte
+(7.97 bits), so the ceiling is about 1.46×, and the gain comes only from entropy coding, which LZ4
+doesn't do. **Lesson:** quantize the KV cache to 8 bits first (2×), then compress losslessly only
+where bytes are expensive: SSD, remote caches, transfers between nodes. Files:
+`experiments/kv-compression/`, `results/kv-compression-20261117/`.
+
 **What is not measured yet (say so):** the real Graviton vs Xeon comparison with Qwen2.5-1.5B, the
 llama.cpp KleidiAI A/B, the GPU reference, and counter-level analysis. Those run on AWS next.
 
@@ -668,7 +689,7 @@ Intel platforms" in one sentence.
 | JVM tuning, lock contention, perf, VTune, flame graphs | Find bottlenecks across runtime, OS and hardware; profiling tools |
 | QAT Java library, **23% throughput gain** (your resume) | Hardware-aware optimization; accelerator offload; measured gain |
 | Lucene and OpenSearch zstd codec work | Software optimization of a data path; codec trade-offs (ratio vs CPU) |
-| Cassandra compaction with zstd and QAT, measured with NoSQLBench | The full loop: bottleneck → change → measure → explain (§5) |
+| Cassandra compaction with zstd and QAT, measured with NoSQLBench | The full loop: bottleneck → change → measure → explain (§6) |
 | Goldman Sachs (via Rearc): AWS lakehouse ingestion, Claude agent layer | Production agentic AI |
 | inference-lab, pipeline-triage-agent | LLM serving, KV cache, batching, quantization, agents |
 
@@ -683,14 +704,197 @@ ask how you make benchmark infrastructure trustworthy.
 
 ---
 
-## 5. Your model answer: the Cassandra compression story
+## 5. The product: Intel Agent Toolkit, and where your work fits
+
+The job sits in Intel's "AI Solutions and **Toolkit** Engineering" team. Intel's open-source
+**Agent Toolkit** (`intel/enterprise-agent-toolkit`) is very likely the product that team builds,
+so this section teaches it in their own words and shows where your work adds value.
+
+Source: your study fork, `praveennish/agent-toolkit`, branch `claude/inspiring-hawking-lzeaaz`,
+folder `doc/` (design, 12 ADRs, a code walkthrough and a long Q&A pack). Everything below comes
+from that repository's docs. Say **"I studied it"** in the interview; you did not build it.
+
+### 5.1 What it is, in one minute
+
+**One sentence:** a Kubernetes platform that installs everything an AI agent needs in production
+*except the agent itself*, and runs it on Xeon.
+
+Their core idea, from the README: *"GPUs accelerate reasoning. But the value of agentic AI comes
+from end-to-end task execution, and that control plane (state, tools, policy, coordination) runs
+efficiently on CPUs."*
+
+| Block | Default it ships with |
+|---|---|
+| API gateway and access | LiteLLM (virtual keys, budgets, rate limits) behind Envoy Gateway (TLS) |
+| Inference routing | Hybrid Router: a rules classifier plus a bandit per tier |
+| Model serving | vLLM on Xeon under KServe; OpenVINO Model Server on the Docker path |
+| Safety | A fail-closed guardrail using Qwen3Guard-Gen-0.6B |
+| Memory | Redis Stack (session state) and PostgreSQL 16 + pgvector (long-term memory) |
+| Code execution | Agent Sandbox with warm pools; optional Kata microVMs and NVIDIA OpenShell |
+| Observability | Langfuse traces, Prometheus, Grafana, Loki |
+| Deployment | Ansible roles, Helm charts, Docker Compose for development |
+
+The default chat model is **Qwen2.5-Coder-14B-Instruct**, served by vLLM on CPU. The default
+install needs about **131 GiB** of memory.
+
+### 5.2 One request through the stack
+
+![Agent Toolkit request path](guide/11-agent-toolkit-path.png)
+
+1. The agent calls an OpenAI-compatible endpoint. **Envoy** terminates TLS.
+2. **LiteLLM** checks the agent's virtual key, budget and rate limit.
+3. The **guardrail** asks a small safety model whether the prompt is safe. If the guard is down,
+   the request is blocked (fail-closed).
+4. The **Hybrid Router** scores the prompt's difficulty and picks a model for that tier.
+5. **vLLM on Xeon** generates the answer; **Langfuse** records the trace.
+
+The green boxes are the four measurement points their own docs propose (§5.5). The orange boxes
+are where QuickAssist fits (§5.6).
+
+### 5.3 Inference on Xeon: their settings, mapped to what you know
+
+| Toolkit setting | What it does | Where this guide explains it | Your own evidence |
+|---|---|---|---|
+| `--dtype bfloat16` | BF16 weights so AMX can do the matrix work | §2.7, §2.13 | Your vLLM runs were BF16 |
+| `VLLM_CPU_KVCACHE_SPACE` | GiB reserved for the KV cache | §2.4 | You sized 4 GiB from the formula after the default asked for ~13–14 GiB |
+| `VLLM_CPU_NUM_OF_RESERVED_CPU` | Cores kept for vLLM's own process | §4.3 finding 2 | **You found this by measurement:** vLLM ran 3 compute threads on 4 CPUs |
+| `--block-size 128` | KV cache block size on CPU | §2.5 | Your KV compression test used 16-token blocks; at 128 tokens a block is 3.5 MiB for Qwen2.5-1.5B |
+| `--enable-prefix-caching`, chunked prefill | Reuse shared prompt starts; mix long prompts with decoding | §2.5, §2.6 | — |
+| NRI balloons, `cpu: auto`, one NUMA node per tensor-parallel rank | Pins a model's threads and memory to one NUMA node | §3.1, §3.4 | vLLM logged a NUMA memory-bind in your rehearsal |
+| Preflight: CPU governor `performance`, THP not `always` | Linux settings that slow inference | §3.4 | — |
+| `-specdec` variants | Speculative decoding with a small draft model | §2.9 | — |
+| MoE models (Qwen3-Coder-30B-A3B: 3B active of 30B) | Each token reads only the active experts, so fewer bytes per token | §2.3 | — |
+| OVMS int4 / int8 (Docker path) | Quantized weights | §2.7 | Your llama.cpp Q8_0 / Q4 runs |
+
+Their memory sizing follows the same formula as §2.4: footprint ≈ weights + tensor-parallel ranks ×
+KV cache space + runtime. For Llama-3.1-8B they reserve 40 GiB of KV cache; at 128 KiB per token
+that holds about 327,680 tokens across all users.
+
+> "I recognised the toolkit's CPU settings from my own runs: BF16 for AMX, KV cache sized
+> explicitly, one core reserved for vLLM's own process, and pinning to one NUMA node. I'd measured
+> the reserved core and the KV default myself before I saw them as knobs in `models.yaml`."
+
+### 5.4 The Hybrid Router, and what your work adds to it
+
+**How it works:**
+
+- A free **rules classifier** scores each prompt (length, keywords, multi-step patterns) into
+  SIMPLE, MEDIUM, COMPLEX or REASONING (boundaries 0.15, 0.35, 0.60).
+- For each tier, a **multi-armed bandit** (Thompson sampling by default) picks one of that tier's
+  candidate models and learns from results.
+- Reward = `target_tpt / (target_tpt + time_per_token)`, 0 on failure. Defaults: `target_tpt` =
+  1.0 s, `quality_weight` = 0 (speed only).
+
+**It's the same shape as your triage agent:** rules first because they're free and explainable,
+a cheaper model for most traffic, a bigger model when needed.
+
+**Two improvements you can speak to with authority:**
+
+1. **The reward barely separates models on CPU.** *Arithmetic, illustrative time-per-token values:*
+
+   | Time per token | Reward with `target_tpt` = 1.0 | Reward with `target_tpt` = 0.05 |
+   |---|---|---|
+   | 50 ms | 0.952 | 0.500 |
+   | 100 ms | 0.909 | 0.333 |
+
+   With the default, a model twice as slow scores almost the same, so the bandit learns slowly.
+   Fix: set `target_tpt` from measured time per token on that hardware. Their own design notes
+   list this as a weakness.
+
+2. **The reward is speed only.** A fast model that answers wrongly still scores well. Your lab's
+   rule, *accuracy next to speed*, is the fix: a labelled evaluation set (like your 65-example
+   classification set) feeds `quality_weight`, so the router rewards fast **and** right.
+
+> "The Hybrid Router is the same idea as my triage agent's routing: rules first, small model for
+> most traffic. Two things I'd tune: calibrate `target_tpt` to the measured time per token, because
+> at 1.0 second every CPU model scores about 0.9 and the bandit can't tell them apart; and add a
+> quality signal from an evaluation set, because a fast wrong answer shouldn't win."
+
+### 5.5 The gap you can fill: no published inference numbers
+
+Their docs say plainly that the repository publishes **no measured LLM inference numbers**, and
+list it as the first weakness: customers can't size a deployment without measuring it themselves.
+
+Their docs also propose how to produce the report, and it matches your method:
+
+| Their proposed method | What you already have |
+|---|---|
+| Fix and record the setup: CPU, sockets, NUMA, model, tensor-parallel size, KV cache, vLLM version; preflight clean | Every result in your lab records commit, model revision, image digest, CPU flags, threads, KV size |
+| Measure four paths: vLLM direct, + gateway, + guardrail, + router | Your load tool (`vllm bench serve`) and harness can point at any OpenAI-compatible endpoint |
+| Sweep concurrency 1, 2, 4 … 32 with fixed input and output lengths, plus a realistic prompt mix | Your planned matrix is the same; your classification prompts are a realistic mix |
+| Record TTFT, TPOT, tokens/s, p95/p99, errors, CPU per NUMA node, memory | Your KPI list (§2.10) |
+| Find the knee where p95 latency rises sharply | Your primary KPI: throughput at a latency target |
+| A repeatable harness | Their notes name **Workload Services Framework** as the kind of harness to use. **You architected it.** |
+
+> "Your docs list missing inference numbers as the first gap. That's the work I'd start with: a
+> per-SKU report measured four ways, gateway and guardrail costs separated, with the knee and cost
+> per million tokens at the latency target, run from a harness like WSF so it repeats on every
+> release."
+
+### 5.6 Where QuickAssist and the KV cache fit in the toolkit
+
+- **TLS at the gateway.** Every agent call crosses Envoy over TLS. On a busy gateway node that is
+  CPU work QuickAssist can take over (see the ROI brief).
+- **KV cache blocks are big enough to offload.** With `--block-size 128`, one block is 3.5 MiB for
+  Qwen2.5-1.5B and 16 MiB for an 8B Llama-class model (128 tokens × 128 KiB). Accelerators work best
+  on large buffers.
+- **Prefix caching for agents.** Agents resend long system prompts and tool definitions. Keeping
+  those KV blocks on SSD and compressing them (up to 1.44× measured on a real model, §4.3 finding 9)
+  stores more of them per TB. Quantizing the KV cache to 8 bits comes first; it gives 2×.
+
+The leadership version of this, with the ROI formula and risks:
+[QAT ROI brief](https://claude.ai/artifact/FoX66PGDDuwq48vxAbnG6j).
+
+### 5.7 Your first 90 days on this product (if they ask)
+
+1. **Publish the inference report** (§5.5): per SKU, four paths, concurrency sweep, knee, cost per
+   million tokens at the latency target, with a CI threshold so regressions fail the build.
+2. **Tune the Hybrid Router** (§5.4): calibrate `target_tpt` from measured time per token; add a
+   quality signal from an evaluation set.
+3. **Explain the numbers with counters** on bare metal: prefill vs decode top-down, AMX actually
+   used, NUMA traffic. Turn the findings into better defaults in `models.yaml` (a BKC).
+4. **Agent-specific wins:** measure prefix-cache hit rate and the guardrail's added latency; pilot
+   QuickAssist for gateway TLS and KV offload.
+
+### 5.8 Toolkit questions they may ask
+
+**Q: Why run agent inference on CPUs at all?**
+Most of an agent's time is control plane: state, tools, policy. That runs on CPUs anyway. Xeon has
+AMX for BF16 and INT8, MoE models read only a few experts per token, and small models fit easily
+in CPU memory. GPUs stay optional because the gateway is OpenAI-compatible.
+
+**Q: Why pin each tensor-parallel rank to one NUMA node?**
+Decode is memory-bandwidth-bound, so remote memory over UPI hurts. One rank per NUMA node keeps
+each slice of the model next to its memory. Their docs note that spanning NUMA nodes at
+tensor-parallel size 1 crashes vLLM, and that too large a memory limit widens the memory set and
+breaks core binding.
+
+**Q: Why does the default install need ~131 GiB?**
+Footprint = weights + tensor-parallel ranks × KV cache space + runtime. The KV cache reservation is
+the biggest part. On a 128 GB node, use a smaller model.
+
+**Q: How would you measure what the guardrail costs?**
+A/B through the gateway with the guard on and off. It adds one small-model call per request. Report
+the added p95 latency and the false-positive rate, and remember it's fail-closed, so the guard's
+availability is the chat's availability.
+
+**Q: What would you improve first?**
+Published inference numbers (§5.5), then the router reward (§5.4).
+
+**Q: Why MoE models on CPU?**
+Decode cost is set by bytes read per token. An MoE model reads only the active experts (3B of 30B
+here), so decode is cheaper, while CPUs have plenty of memory to hold all the experts.
+
+---
+
+## 6. Your model answer: the Cassandra compression story
 
 ![Cassandra story](guide/08-cassandra-story.png)
 
 This is your best "bottleneck → change → measure → why" story. **Fill in your real numbers
 tonight** in the table below. Do not quote a number you cannot stand behind.
 
-### 5.1 The story in STAR form
+### 6.1 The story in STAR form
 
 **Situation.** Cassandra writes go to a memtable, are flushed to immutable files (SSTables), and
 **compaction** later merges and rewrites those files. Every rewrite compresses data again, so
@@ -706,11 +910,11 @@ compression runs constantly on the write path. Under heavy writes, compaction fe
    more CPU per byte.
 3. Added **QAT** (Intel QuickAssist) so compression ran on the accelerator, freeing CPU cores for
    request handling and compaction logic.
-4. Measured with **NoSQLBench**, not cassandra-stress (§5.2).
+4. Measured with **NoSQLBench**, not cassandra-stress (§6.2).
 
-**Result.** **[fill in your table below]**, and the **why** (§5.4).
+**Result.** **[fill in your table below]**, and the **why** (§6.4).
 
-### 5.2 Why NoSQLBench and not cassandra-stress
+### 6.2 Why NoSQLBench and not cassandra-stress
 
 | | NoSQLBench | cassandra-stress |
 |---|---|---|
@@ -726,7 +930,7 @@ compression runs constantly on the write path. Under heavy writes, compaction fe
 **The LLM equivalent:** `vllm bench serve` with a fixed **request rate** is the NoSQLBench-style
 test; firing requests in a closed loop is the cassandra-stress-style test. Same lesson.
 
-### 5.3 Your numbers (fill in tonight)
+### 6.3 Your numbers (fill in tonight)
 
 | KPI | Baseline codec | zstd (CPU) | zstd/QAT | How measured |
 |---|---|---|---|---|
@@ -741,7 +945,7 @@ test; firing requests in a closed loop is the cassandra-stress-style test. Same 
 If the headline is the **23% throughput** from your resume (QAT Java library), say exactly which
 workload and setup it came from **[confirm]**.
 
-### 5.4 The WHY, in the words to use
+### 6.4 The WHY, in the words to use
 
 1. **Compression was on the hot path.** Compaction competes with requests for the same cores;
    the profile showed CPU time in the codec **[fill in]**.
@@ -754,7 +958,7 @@ workload and setup it came from **[confirm]**.
    gain; QAT hardware must be present (fallback to software); data compressed by one codec must
    still be readable.
 
-### 5.5 The bridge to LLM inference (say this)
+### 6.5 The bridge to LLM inference (say this)
 
 ![Analogy](guide/09-analogy.png)
 
@@ -767,7 +971,7 @@ workload and setup it came from **[confirm]**.
 
 ---
 
-## 6. Questions you will be asked, with answers
+## 7. Questions you will be asked, with answers
 
 ### Fundamentals
 
@@ -897,9 +1101,9 @@ in a report without a raw file.
 
 ---
 
-## 7. What to claim, what not to claim, what to ask them
+## 8. What to claim, what not to claim, what to ask them
 
-### 7.1 Claim (true and evidenced)
+### 8.1 Claim (true and evidenced)
 
 - Twelve years of Intel performance and benchmarking work; WSF; Xeon validation.
 - Profiling with perf, VTune, flame graphs; JVM and lock-contention work; QAT and zstd work with
@@ -907,27 +1111,35 @@ in a report without a raw file.
 - Built and shipped an agentic AI system with MCP tools.
 - Ran vLLM and llama.cpp yourself; sized a KV cache; measured batching; found and explained real
   behaviours (core reservation, memory defaults, shared memory, run-to-run noise).
+- Measured KV-cache compressibility on a real model and explained the ceiling.
+- Studied Intel's Agent Toolkit end to end: its design, decisions, CPU settings and gaps.
 
-### 7.2 Do not claim
+### 8.2 Do not claim
 
 - Production LLM serving experience, or measured Graviton vs Xeon results (not run yet).
 - Upstream contributions to vLLM or SGLang (unless you have them).
 - Specific Xeon bandwidth or AMX speed-up numbers you have not measured. Use the arithmetic and say
   "theoretical peak".
+- That you built, contributed to or deployed the Agent Toolkit. You studied it.
 - C++ depth you don't have. Say what you've done natively (e.g. JNI/QAT) **[confirm]** and that
   Java is your expert language.
 
-### 7.3 Good questions to ask them
+### 8.3 Good questions to ask them
 
 - "Which workloads are you characterizing now: agentic pipelines, or single-model serving?"
 - "Where do most of your findings land today: upstream vLLM/SGLang patches, oneDNN, or BKCs?"
 - "How do you get counter-level data on customer-like setups: bare metal, EMON in the lab?"
 - "How do you decide between a software fix and feedback to the silicon team?"
+- "Is the Agent Toolkit the team's main product, and who owns the inference layer: this team or
+  another?"
+- "Are per-SKU inference numbers for the toolkit planned? Who would publish them?"
+- "How is the Hybrid Router tuned today: is `target_tpt` calibrated per platform, and is any
+  quality signal used?"
 - "What does success look like in the first 90 days?"
 
 ---
 
-## 8. One-page cheat sheet
+## 9. One-page cheat sheet
 
 ```
 GENERATION      predict 1 token → append → repeat
@@ -953,6 +1165,13 @@ YOUR FINDINGS   batching ×4.35 thrpt (not 8: shared CPUs, 1 core reserved, over
 STORY           Cassandra: compaction codec CPU → zstd (fewer bytes) + QAT (offload)
                 NoSQLBench fixed-rate + HDR tails → ops/s @ p99, CPU, compaction MB/s
                 SAME AS LLM: quantization = fewer bytes, AMX = offload, bench serve = NoSQLBench
+KV COMPRESSION  real Qwen2.5-1.5B: 28 KiB/token; zstd split planes 1.44× (≤1.46× ceiling);
+                LZ4 1.00×; exponent predictable, mantissa random → quantize first, compress cold tiers
+AGENT TOOLKIT   Intel's agent stack on Xeon: Envoy TLS → LiteLLM → fail-closed guard → Hybrid Router
+                (rules + bandit) → vLLM BF16/AMX, NUMA-pinned (NRI) → Langfuse
+                knobs: KVCACHE_SPACE, NUM_OF_RESERVED_CPU, block-size 128, prefix caching, specdec
+                gaps: NO published inference numbers (measure 4 paths, find knee, WSF-style harness)
+                router reward target_tpt=1.0 → CPU models all ≈0.9; speed-only → add quality signal
 ```
 
 Good luck. Slow down, draw the prefill/decode picture on the whiteboard, and end every answer with

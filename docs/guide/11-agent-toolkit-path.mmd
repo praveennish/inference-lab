@@ -1,0 +1,25 @@
+flowchart LR
+    agent["Agent<br/>LangGraph, CrewAI,<br/>any OpenAI client"]
+    envoy["Envoy Gateway<br/>TLS"]
+    litellm["LiteLLM gateway<br/>virtual keys, budgets,<br/>rate limits"]
+    guard["Guardrail<br/>Qwen3Guard 0.6B<br/>fail-closed"]
+    router["Hybrid Router<br/>rules classifier +<br/>bandit per tier"]
+    vllm["vLLM on Xeon<br/>BF16 + AMX<br/>NUMA-pinned, KServe"]
+    trace["Langfuse<br/>trace per request"]
+
+    agent --> envoy --> litellm --> guard --> router --> vllm
+    litellm -.-> trace
+
+    m1(["Measure 1: vLLM direct"]) -.- vllm
+    m2(["Measure 2: + gateway"]) -.- litellm
+    m3(["Measure 3: + guardrail"]) -.- guard
+    m4(["Measure 4: + router"]) -.- router
+    qat(["QAT: TLS offload"]) -.- envoy
+    kv(["QAT: compress KV blocks<br/>sent to SSD or other nodes"]) -.- vllm
+
+    classDef path fill:#eaf2ff,stroke:#3a68b5
+    classDef meas fill:#eaf7ea,stroke:#3a8a3a
+    classDef q fill:#fff4e5,stroke:#c77700
+    class envoy,litellm,guard,router,vllm path
+    class m1,m2,m3,m4 meas
+    class qat,kv q

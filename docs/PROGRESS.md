@@ -4,7 +4,7 @@ Read this first in any new session. It is the long-term memory for this project:
 what was measured, what is pending, and how the owner likes to work. Update it at the end of
 every working session.
 
-Last updated: 2026-11-22. Branch: `claude/inference-lab-v2-kickoff-omwdxx` (the only branch; no
+Last updated: 2026-11-23. Branch: `claude/inference-lab-v2-kickoff-omwdxx` (the only branch; no
 `main` yet, by the owner's choice). No pull request opened.
 
 ## 1. The project in two lines
@@ -58,7 +58,8 @@ KV-cache compression on the **real Qwen2.5-1.5B-Instruct** (Docker Hub `ai/qwen2
 | Document | Where |
 |---|---|
 | Design doc (architecture, components, sequence, decisions, Q&A) | `docs/design.md`, diagrams in `docs/diagrams/` |
-| Interview guide from scratch (LLM inference, Xeon tools, project evidence, Cassandra story) | `docs/interview-guide.md`, diagrams in `docs/guide/` |
+| Interview guide from scratch (LLM inference, Xeon tools, project evidence, **Intel Agent Toolkit §5**, Cassandra story) | `docs/interview-guide.md`, diagrams in `docs/guide/` |
+| Intel Agent Toolkit study pack (design, 12 ADRs, Q&A) | `praveennish/agent-toolkit`, branch `claude/inspiring-hawking-lzeaaz`, folder `doc/` (read-only for this project) |
 | ADRs 0001–0007 | `docs/adr/` |
 | AI-in-the-SDLC log (every generated piece and what caught its bugs) | `docs/ai-sdlc-log.md` |
 | Cost log | `docs/cost-log.md` |
@@ -67,6 +68,17 @@ KV-cache compression on the **real Qwen2.5-1.5B-Instruct** (Docker Hub `ai/qwen2
 The interview guide's Cassandra section (§5.3) has **[fill in]** slots for the owner's real
 numbers, and three **[confirm]** items (C/C++ experience, whether the Lucene/OpenSearch zstd work
 was upstreamed, which workload the resume's 23% QAT gain came from).
+
+## 4a. Intel Agent Toolkit: key points (from the study fork)
+
+- Likely the Intel team's product ("AI Solutions and Toolkit Engineering"). Owner studied it; did not build it.
+- Path: Envoy TLS → LiteLLM (keys, budgets) → fail-closed Qwen3Guard-0.6B guardrail → Hybrid Router
+  (rules classifier 0.15/0.35/0.60 + Thompson bandit per tier, reward target_tpt/(target_tpt+TPT),
+  target_tpt 1.0, quality_weight 0) → vLLM on Xeon (BF16/AMX, NRI NUMA pinning, KServe) → Langfuse.
+- vLLM knobs: `VLLM_CPU_KVCACHE_SPACE`, `VLLM_CPU_NUM_OF_RESERVED_CPU`, `--block-size 128`,
+  prefix caching, chunked prefill, `-specdec`. Default model Qwen2.5-Coder-14B; default install ~131 GiB.
+- Its docs list **no published inference numbers** as weakness F1 and name WSF as the kind of
+  harness to fix it; router reward weaknesses F3 (target_tpt) and F4 (speed only).
 
 ## 5. Next steps, in order
 
